@@ -398,6 +398,15 @@ export type Database = {
         Args: { r: Database["public"]["Tables"]["restricoes"]["Row"] }
         Returns: boolean
       }
+      restricoes_pendentes_escrita: {
+        Args: { p_obra: string }
+        Returns: {
+          id: string
+          linha_planilha: number
+          status: Database["public"]["Enums"]["restricao_status"]
+          status_alterado_em: string
+        }[]
+      }
     }
     Enums: {
       disparo_canal: "email" | "whatsapp"
