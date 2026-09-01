@@ -1,0 +1,38 @@
+# deps
+node_modules/
+.pnp.*
+
+# next
+.next/
+out/
+build/
+next-env.d.ts
+
+# env — nunca commitar
+.env
+.env.*
+!.env.example
+
+# testes
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# supabase local
+supabase/.temp/
+supabase/.branches/
+
+# claude — pessoal, não versionado
+.claude/settings.local.json
+
+# misc
+.DS_Store
+*.pem
+*.key
+*.tsbuildinfo
+.vercel/
+.idea/
+.vscode/*
+!.vscode/extensions.json
