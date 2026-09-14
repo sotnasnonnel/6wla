@@ -34,70 +34,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      disparo_itens: {
+      importacoes: {
         Row: {
-          disparo_id: string
-          restricao_id: string
-        }
-        Insert: {
-          disparo_id: string
-          restricao_id: string
-        }
-        Update: {
-          disparo_id?: string
-          restricao_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "disparo_itens_disparo_id_fkey"
-            columns: ["disparo_id"]
-            isOneToOne: false
-            referencedRelation: "disparos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "disparo_itens_restricao_id_fkey"
-            columns: ["restricao_id"]
-            isOneToOne: false
-            referencedRelation: "restricoes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      disparos: {
-        Row: {
-          canal: Database["public"]["Enums"]["disparo_canal"]
-          destinatario_email: string
-          enviado_em: string
-          erro: string | null
+          aba: string
+          arquivo_nome: string
+          atualizadas: number
+          cabecalhos: string[]
+          concluido_em: string | null
+          criado_em: string
+          criado_por: string | null
           id: string
+          ignoradas: number
+          importadas: number
+          linhas: Json
+          mapa_colunas: Json
+          mapa_origem: string
+          modo: Database["public"]["Enums"]["importacao_modo"]
           obra_id: string
-          qtd_restricoes: number
-          sucesso: boolean
+          status: Database["public"]["Enums"]["importacao_status"]
+          total_linhas: number
         }
         Insert: {
-          canal?: Database["public"]["Enums"]["disparo_canal"]
-          destinatario_email: string
-          enviado_em?: string
-          erro?: string | null
+          aba: string
+          arquivo_nome: string
+          atualizadas?: number
+          cabecalhos?: string[]
+          concluido_em?: string | null
+          criado_em?: string
+          criado_por?: string | null
           id?: string
+          ignoradas?: number
+          importadas?: number
+          linhas?: Json
+          mapa_colunas?: Json
+          mapa_origem?: string
+          modo?: Database["public"]["Enums"]["importacao_modo"]
           obra_id: string
-          qtd_restricoes?: number
-          sucesso: boolean
+          status?: Database["public"]["Enums"]["importacao_status"]
+          total_linhas?: number
         }
         Update: {
-          canal?: Database["public"]["Enums"]["disparo_canal"]
-          destinatario_email?: string
-          enviado_em?: string
-          erro?: string | null
+          aba?: string
+          arquivo_nome?: string
+          atualizadas?: number
+          cabecalhos?: string[]
+          concluido_em?: string | null
+          criado_em?: string
+          criado_por?: string | null
           id?: string
+          ignoradas?: number
+          importadas?: number
+          linhas?: Json
+          mapa_colunas?: Json
+          mapa_origem?: string
+          modo?: Database["public"]["Enums"]["importacao_modo"]
           obra_id?: string
-          qtd_restricoes?: number
-          sucesso?: boolean
+          status?: Database["public"]["Enums"]["importacao_status"]
+          total_linhas?: number
         }
         Relationships: [
           {
-            foreignKeyName: "disparos_obra_id_fkey"
+            foreignKeyName: "importacoes_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "importacoes_obra_id_fkey"
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
@@ -105,94 +109,100 @@ export type Database = {
           },
         ]
       }
-      membros_obra: {
+      membros_workspace: {
         Row: {
           criado_em: string
-          obra_id: string
-          papel: Database["public"]["Enums"]["papel_obra"]
+          papel: Database["public"]["Enums"]["workspace_papel"]
           user_id: string
+          workspace_id: string
         }
         Insert: {
           criado_em?: string
-          obra_id: string
-          papel: Database["public"]["Enums"]["papel_obra"]
+          papel?: Database["public"]["Enums"]["workspace_papel"]
           user_id: string
+          workspace_id: string
         }
         Update: {
           criado_em?: string
-          obra_id?: string
-          papel?: Database["public"]["Enums"]["papel_obra"]
+          papel?: Database["public"]["Enums"]["workspace_papel"]
           user_id?: string
+          workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "membros_obra_obra_id_fkey"
-            columns: ["obra_id"]
-            isOneToOne: false
-            referencedRelation: "obras"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "membros_obra_user_id_fkey"
+            foreignKeyName: "membros_workspace_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "membros_workspace_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      obra_fontes: {
+      notificacoes: {
         Row: {
-          aba: string
-          arquivo_url: string
-          copias_fixas: string[]
+          autor_id: string | null
+          comentario_id: string | null
           criado_em: string
-          dias_disparo: number[]
-          hora_disparo: string
-          linhas_descartadas: number
-          mapa_colunas: Json
-          mapa_status: Json
-          obra_id: string
-          sincronia_ativa: boolean
-          ultima_escrita_em: string | null
-          ultima_leitura_em: string | null
+          id: string
+          lida_em: string | null
+          restricao_id: string
+          tipo: Database["public"]["Enums"]["notificacao_tipo"]
+          user_id: string
         }
         Insert: {
-          aba?: string
-          arquivo_url: string
-          copias_fixas?: string[]
+          autor_id?: string | null
+          comentario_id?: string | null
           criado_em?: string
-          dias_disparo?: number[]
-          hora_disparo?: string
-          linhas_descartadas?: number
-          mapa_colunas?: Json
-          mapa_status?: Json
-          obra_id: string
-          sincronia_ativa?: boolean
-          ultima_escrita_em?: string | null
-          ultima_leitura_em?: string | null
+          id?: string
+          lida_em?: string | null
+          restricao_id: string
+          tipo: Database["public"]["Enums"]["notificacao_tipo"]
+          user_id: string
         }
         Update: {
-          aba?: string
-          arquivo_url?: string
-          copias_fixas?: string[]
+          autor_id?: string | null
+          comentario_id?: string | null
           criado_em?: string
-          dias_disparo?: number[]
-          hora_disparo?: string
-          linhas_descartadas?: number
-          mapa_colunas?: Json
-          mapa_status?: Json
-          obra_id?: string
-          sincronia_ativa?: boolean
-          ultima_escrita_em?: string | null
-          ultima_leitura_em?: string | null
+          id?: string
+          lida_em?: string | null
+          restricao_id?: string
+          tipo?: Database["public"]["Enums"]["notificacao_tipo"]
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "obra_fontes_obra_id_fkey"
-            columns: ["obra_id"]
-            isOneToOne: true
-            referencedRelation: "obras"
+            foreignKeyName: "notificacoes_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificacoes_comentario_id_fkey"
+            columns: ["comentario_id"]
+            isOneToOne: false
+            referencedRelation: "restricao_comentarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificacoes_restricao_id_fkey"
+            columns: ["restricao_id"]
+            isOneToOne: false
+            referencedRelation: "restricoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificacoes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
         ]
@@ -204,6 +214,7 @@ export type Database = {
           criado_em: string
           id: string
           nome: string
+          workspace_id: string
         }
         Insert: {
           ativa?: boolean
@@ -211,6 +222,7 @@ export type Database = {
           criado_em?: string
           id?: string
           nome: string
+          workspace_id: string
         }
         Update: {
           ativa?: boolean
@@ -218,72 +230,165 @@ export type Database = {
           criado_em?: string
           id?: string
           nome?: string
+          workspace_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "obras_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       perfis: {
         Row: {
+          admin: boolean
+          ativo: boolean
           criado_em: string
           email: string
           id: string
-          nome: string | null
-          pmo: boolean
+          nome: string
         }
         Insert: {
+          admin?: boolean
+          ativo?: boolean
           criado_em?: string
           email: string
           id: string
-          nome?: string | null
-          pmo?: boolean
+          nome: string
         }
         Update: {
+          admin?: boolean
+          ativo?: boolean
           criado_em?: string
           email?: string
           id?: string
-          nome?: string | null
-          pmo?: boolean
+          nome?: string
         }
         Relationships: []
       }
+      restricao_anexos: {
+        Row: {
+          caminho: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome: string
+          restricao_id: string
+          tamanho: number
+          tipo_mime: string | null
+        }
+        Insert: {
+          caminho: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+          restricao_id: string
+          tamanho: number
+          tipo_mime?: string | null
+        }
+        Update: {
+          caminho?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+          restricao_id?: string
+          tamanho?: number
+          tipo_mime?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restricao_anexos_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricao_anexos_restricao_id_fkey"
+            columns: ["restricao_id"]
+            isOneToOne: false
+            referencedRelation: "restricoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restricao_comentarios: {
+        Row: {
+          autor_id: string | null
+          criado_em: string
+          id: string
+          mencoes: string[]
+          restricao_id: string
+          texto: string
+        }
+        Insert: {
+          autor_id?: string | null
+          criado_em?: string
+          id?: string
+          mencoes?: string[]
+          restricao_id: string
+          texto: string
+        }
+        Update: {
+          autor_id?: string | null
+          criado_em?: string
+          id?: string
+          mencoes?: string[]
+          restricao_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restricao_comentarios_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricao_comentarios_restricao_id_fkey"
+            columns: ["restricao_id"]
+            isOneToOne: false
+            referencedRelation: "restricoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restricao_eventos: {
         Row: {
-          autor_email: string | null
           autor_id: string | null
-          comentario: string | null
+          campo: string | null
           criado_em: string
           id: string
           restricao_id: string
-          status_anterior:
-            | Database["public"]["Enums"]["restricao_status"]
-            | null
-          status_novo: Database["public"]["Enums"]["restricao_status"] | null
           tipo: Database["public"]["Enums"]["evento_tipo"]
+          valor_anterior: string | null
+          valor_novo: string | null
         }
         Insert: {
-          autor_email?: string | null
           autor_id?: string | null
-          comentario?: string | null
+          campo?: string | null
           criado_em?: string
           id?: string
           restricao_id: string
-          status_anterior?:
-            | Database["public"]["Enums"]["restricao_status"]
-            | null
-          status_novo?: Database["public"]["Enums"]["restricao_status"] | null
           tipo: Database["public"]["Enums"]["evento_tipo"]
+          valor_anterior?: string | null
+          valor_novo?: string | null
         }
         Update: {
-          autor_email?: string | null
           autor_id?: string | null
-          comentario?: string | null
+          campo?: string | null
           criado_em?: string
           id?: string
           restricao_id?: string
-          status_anterior?:
-            | Database["public"]["Enums"]["restricao_status"]
-            | null
-          status_novo?: Database["public"]["Enums"]["restricao_status"] | null
           tipo?: Database["public"]["Enums"]["evento_tipo"]
+          valor_anterior?: string | null
+          valor_novo?: string | null
         }
         Relationships: [
           {
@@ -305,74 +410,130 @@ export type Database = {
       restricoes: {
         Row: {
           acao: string | null
+          area: string | null
           atividade_impactada: string | null
+          atualizado_em: string
+          causa_6m: string | null
           classificacao: string | null
+          codigo: string | null
           criado_em: string
-          data_criacao: string | null
+          criado_por: string | null
+          data_conclusao: string | null
+          data_criacao: string
           data_limite: string | null
           descricao: string
+          descricao_status: string | null
           extras: Json
           id: string
-          linha_planilha: number | null
+          id_atividade: string | null
+          importacao_id: string | null
+          inicio_atividade: string | null
           localizacao: string | null
+          numero: number
           obra_id: string
-          removida_da_planilha: boolean
+          observacoes: string | null
+          origem: Database["public"]["Enums"]["restricao_origem"]
+          prazo_original: string | null
+          previsao_conclusao: string | null
+          prioridade: Database["public"]["Enums"]["restricao_prioridade"]
+          reprogramacoes: number
           responsavel_email: string | null
+          responsavel_id: string | null
           responsavel_nome: string | null
+          responsavel_telefone: string | null
+          semana_programada: string | null
           setor: string | null
-          sincronizado_em: string
           status: Database["public"]["Enums"]["restricao_status"]
-          status_alterado_em: string
-          status_alterado_por: string | null
-          status_escrito_em: string | null
         }
         Insert: {
           acao?: string | null
+          area?: string | null
           atividade_impactada?: string | null
+          atualizado_em?: string
+          causa_6m?: string | null
           classificacao?: string | null
+          codigo?: string | null
           criado_em?: string
-          data_criacao?: string | null
+          criado_por?: string | null
+          data_conclusao?: string | null
+          data_criacao?: string
           data_limite?: string | null
           descricao: string
+          descricao_status?: string | null
           extras?: Json
           id?: string
-          linha_planilha?: number | null
+          id_atividade?: string | null
+          importacao_id?: string | null
+          inicio_atividade?: string | null
           localizacao?: string | null
+          numero?: number
           obra_id: string
-          removida_da_planilha?: boolean
+          observacoes?: string | null
+          origem?: Database["public"]["Enums"]["restricao_origem"]
+          prazo_original?: string | null
+          previsao_conclusao?: string | null
+          prioridade?: Database["public"]["Enums"]["restricao_prioridade"]
+          reprogramacoes?: number
           responsavel_email?: string | null
+          responsavel_id?: string | null
           responsavel_nome?: string | null
+          responsavel_telefone?: string | null
+          semana_programada?: string | null
           setor?: string | null
-          sincronizado_em?: string
           status?: Database["public"]["Enums"]["restricao_status"]
-          status_alterado_em?: string
-          status_alterado_por?: string | null
-          status_escrito_em?: string | null
         }
         Update: {
           acao?: string | null
+          area?: string | null
           atividade_impactada?: string | null
+          atualizado_em?: string
+          causa_6m?: string | null
           classificacao?: string | null
+          codigo?: string | null
           criado_em?: string
-          data_criacao?: string | null
+          criado_por?: string | null
+          data_conclusao?: string | null
+          data_criacao?: string
           data_limite?: string | null
           descricao?: string
+          descricao_status?: string | null
           extras?: Json
           id?: string
-          linha_planilha?: number | null
+          id_atividade?: string | null
+          importacao_id?: string | null
+          inicio_atividade?: string | null
           localizacao?: string | null
+          numero?: number
           obra_id?: string
-          removida_da_planilha?: boolean
+          observacoes?: string | null
+          origem?: Database["public"]["Enums"]["restricao_origem"]
+          prazo_original?: string | null
+          previsao_conclusao?: string | null
+          prioridade?: Database["public"]["Enums"]["restricao_prioridade"]
+          reprogramacoes?: number
           responsavel_email?: string | null
+          responsavel_id?: string | null
           responsavel_nome?: string | null
+          responsavel_telefone?: string | null
+          semana_programada?: string | null
           setor?: string | null
-          sincronizado_em?: string
           status?: Database["public"]["Enums"]["restricao_status"]
-          status_alterado_em?: string
-          status_alterado_por?: string | null
-          status_escrito_em?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "restricoes_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricoes_importacao_id_fkey"
+            columns: ["importacao_id"]
+            isOneToOne: false
+            referencedRelation: "importacoes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "restricoes_obra_id_fkey"
             columns: ["obra_id"]
@@ -381,38 +542,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricoes_status_alterado_por_fkey"
-            columns: ["status_alterado_por"]
+            foreignKeyName: "restricoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "perfis"
             referencedColumns: ["id"]
           },
         ]
       }
+      workspaces: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          criado_em: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          criado_em?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          criado_em?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      restricao_atrasada: {
-        Args: { r: Database["public"]["Tables"]["restricoes"]["Row"] }
-        Returns: boolean
-      }
-      restricoes_pendentes_escrita: {
-        Args: { p_obra: string }
-        Returns: {
-          id: string
-          linha_planilha: number
-          status: Database["public"]["Enums"]["restricao_status"]
-          status_alterado_em: string
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
-      disparo_canal: "email" | "whatsapp"
-      evento_tipo: "criada" | "status" | "comentario" | "sincronizacao"
-      papel_obra: "responsavel" | "gestor"
-      restricao_status: "pendente" | "em_tratativa" | "resolvida" | "cancelada"
+      evento_tipo: "criada" | "alteracao" | "importada"
+      importacao_modo: "adicionar" | "atualizar"
+      importacao_status: "rascunho" | "concluida" | "cancelada"
+      notificacao_tipo: "mencao" | "atribuicao" | "comentario"
+      restricao_origem: "manual" | "importada"
+      restricao_prioridade: "urgente" | "alta" | "media" | "baixa"
+      restricao_status: "pendente" | "em_andamento" | "concluida" | "cancelada"
+      workspace_papel: "admin" | "gestor" | "membro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -543,10 +720,14 @@ export const Constants = {
   },
   public: {
     Enums: {
-      disparo_canal: ["email", "whatsapp"],
-      evento_tipo: ["criada", "status", "comentario", "sincronizacao"],
-      papel_obra: ["responsavel", "gestor"],
-      restricao_status: ["pendente", "em_tratativa", "resolvida", "cancelada"],
+      evento_tipo: ["criada", "alteracao", "importada"],
+      importacao_modo: ["adicionar", "atualizar"],
+      importacao_status: ["rascunho", "concluida", "cancelada"],
+      notificacao_tipo: ["mencao", "atribuicao", "comentario"],
+      restricao_origem: ["manual", "importada"],
+      restricao_prioridade: ["urgente", "alta", "media", "baixa"],
+      restricao_status: ["pendente", "em_andamento", "concluida", "cancelada"],
+      workspace_papel: ["admin", "gestor", "membro"],
     },
   },
 } as const

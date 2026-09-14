@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -15,6 +15,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Restrições 6WLA',
   description: 'Controle de restrições de obra',
+};
+
+/**
+ * Sem isto o celular renderiza a página numa viewport virtual de 980px e
+ * encolhe tudo: os breakpoints do Tailwind nunca chegam a valer.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#26405d',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

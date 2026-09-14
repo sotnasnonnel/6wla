@@ -15,8 +15,12 @@ const publicSchema = z.object({
 const serverSchema = z.object({
   // Ignora RLS. Só é lida no servidor, e apenas por src/server/admin/.
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  // Segredo compartilhado com o n8n para autenticar os webhooks de sincronização.
-  N8N_WEBHOOK_SECRET: z.string().min(16),
+  // Token que o Power BI manda no header Authorization para ler a API.
+  POWERBI_API_TOKEN: z.string().min(24).optional(),
+  // Gemini: sugestão de mapeamento de colunas na importação. Opcional —
+  // sem a chave, vale só a detecção por apelidos.
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
 });
 
 /**
@@ -48,7 +52,9 @@ export function serverEnv() {
 
   const parsed = serverSchema.safeParse({
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    N8N_WEBHOOK_SECRET: process.env.N8N_WEBHOOK_SECRET,
+    POWERBI_API_TOKEN: process.env.POWERBI_API_TOKEN || undefined,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || undefined,
+    GEMINI_MODEL: process.env.GEMINI_MODEL || undefined,
   });
 
   if (!parsed.success) {

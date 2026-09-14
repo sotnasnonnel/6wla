@@ -36,3 +36,7 @@ supabase/.branches/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+/6wla.xlsx
+*.xlsx
+*.png
+.playwright-mcp/
