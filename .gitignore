@@ -39,4 +39,6 @@ supabase/.branches/
 /6wla.xlsx
 *.xlsx
 *.png
+# Imagens do app (logo) são versionadas; as capturas soltas na raiz não.
+!public/*.png
 .playwright-mcp/

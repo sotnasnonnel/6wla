@@ -11,9 +11,9 @@ import { tetoDoEixo, type PontoSemana } from "@/lib/restricoes/indicadores";
 
 const COR_CONCLUIDAS = "#00a49a";
 const COR_PREVISTAS = "#26405d";
-const GRADE = "#e4e2df";
-const EIXO = "#cfccc8";
-const TINTA_FRACA = "#7a7a7a";
+const GRADE = "#e2e8f0";
+const EIXO = "#cbd5e1";
+const TINTA_FRACA = "#64748b";
 
 type Props = { pontos: PontoSemana[]; acumulado?: boolean };
 
@@ -143,7 +143,7 @@ export function SerieSemanal({ pontos, acumulado = false }: Props) {
                     y={y(0) + (deitado ? 14 : 12)}
                     textAnchor={deitado ? "middle" : "end"}
                     fontSize={9}
-                    fill={ativo === i ? "#1b1b1b" : TINTA_FRACA}
+                    fill={ativo === i ? "#0f172a" : TINTA_FRACA}
                     fontWeight={ativo === i ? 600 : 400}
                     transform={
                       deitado ? undefined : `rotate(-45 ${xCentro(i)} ${y(0) + 12})`
@@ -201,7 +201,7 @@ export function SerieSemanal({ pontos, acumulado = false }: Props) {
       </div>
 
       <div
-        className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-md border border-[var(--borda)] bg-white px-2 py-1 text-xs shadow-sm"
+        className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-lg border border-[var(--borda)] bg-white px-2 py-1 text-xs shadow-sm"
         style={{ visibility: p0 ? "visible" : "hidden" }}
       >
         {p0 ? (

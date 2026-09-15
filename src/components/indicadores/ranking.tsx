@@ -50,7 +50,7 @@ export function RankingConclusao({
               title={`${i.chave}: ${i.concluidas} concluída(s) de ${i.total} · ${i.abertas} em aberto`}
               className={`flex w-full items-center gap-2 rounded px-1 py-0.5 text-left transition ${
                 aoClicar ? "hover:bg-[var(--marca-gelo)]" : "cursor-default"
-              } ${ativa ? "bg-[#fbeedd] ring-1 ring-[var(--marca-terracotta)]" : ""}`}
+              } ${ativa ? "bg-[var(--marca-brand-50)] ring-1 ring-[var(--marca-terracotta)]" : ""}`}
             >
               <span
                 className={`w-5 shrink-0 text-right text-xs font-semibold tabular-nums ${

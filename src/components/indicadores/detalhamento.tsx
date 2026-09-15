@@ -32,11 +32,11 @@ export function Detalhamento({
   return (
     <div>
       <div
-        className="-mx-2.5 overflow-auto border-y border-[var(--borda)] sm:mx-0 sm:rounded-md sm:border"
+        className="-mx-2.5 overflow-auto border-y border-[var(--borda)] sm:mx-0 sm:rounded-lg sm:border"
         style={{ maxHeight: 420 }}
       >
         <table className="w-full border-separate border-spacing-0 text-xs">
-          <thead className="sticky top-0 z-10 bg-[var(--marca-gelo)]">
+          <thead className="sticky top-0 z-10 bg-[var(--plano)]">
             <tr>
               {[
                 "Nº",
@@ -66,8 +66,8 @@ export function Detalhamento({
               const resolucao = tempoResolucao(r);
               const atraso = tempoAtraso(r, hoje);
               return (
-                <tr key={r.id} className="odd:bg-white even:bg-[#faf9f8]">
-                  <td className="whitespace-nowrap border-b border-[#eceae7] px-2 py-1">
+                <tr key={r.id} className="odd:bg-white even:bg-[#fcfcfd]">
+                  <td className="whitespace-nowrap border-b border-[var(--grade)] px-2 py-1">
                     <Link
                       href={`/obras/${r.obra_id}/restricoes/${r.id}`}
                       className="font-mono font-semibold text-[var(--marca-terracotta)] hover:underline"
@@ -75,40 +75,40 @@ export function Detalhamento({
                       {formataNumero(r.numero)}
                     </Link>
                   </td>
-                  <td className="whitespace-nowrap border-b border-[#eceae7] px-2 py-1 tabular-nums text-[var(--tinta-media)]">
+                  <td className="whitespace-nowrap border-b border-[var(--grade)] px-2 py-1 tabular-nums text-[var(--tinta-media)]">
                     {formataData(r.data_limite)}
                   </td>
-                  <td className="whitespace-nowrap border-b border-[#eceae7] px-2 py-1 tabular-nums text-[var(--tinta-media)]">
+                  <td className="whitespace-nowrap border-b border-[var(--grade)] px-2 py-1 tabular-nums text-[var(--tinta-media)]">
                     {formataData(r.previsao_conclusao)}
                   </td>
-                  <td className="whitespace-nowrap border-b border-[#eceae7] px-2 py-1 tabular-nums text-[var(--tinta-media)]">
+                  <td className="whitespace-nowrap border-b border-[var(--grade)] px-2 py-1 tabular-nums text-[var(--tinta-media)]">
                     {formataData(r.data_conclusao)}
                   </td>
                   <td
-                    className="max-w-[190px] truncate border-b border-[#eceae7] px-2 py-1 text-[var(--tinta-media)]"
+                    className="max-w-[190px] truncate border-b border-[var(--grade)] px-2 py-1 text-[var(--tinta-media)]"
                     title={r.atividade_impactada ?? ""}
                   >
                     {r.atividade_impactada}
                   </td>
                   <td
-                    className="max-w-[130px] truncate border-b border-[#eceae7] px-2 py-1 text-[var(--tinta-media)]"
+                    className="max-w-[130px] truncate border-b border-[var(--grade)] px-2 py-1 text-[var(--tinta-media)]"
                     title={r.responsavel ?? ""}
                   >
                     {r.responsavel}
                   </td>
                   <td
-                    className="max-w-[230px] truncate border-b border-[#eceae7] px-2 py-1 text-[var(--tinta-forte)]"
+                    className="max-w-[230px] truncate border-b border-[var(--grade)] px-2 py-1 text-[var(--tinta-forte)]"
                     title={r.descricao}
                   >
                     {r.descricao}
                   </td>
                   <td
-                    className="max-w-[230px] truncate border-b border-[#eceae7] px-2 py-1 text-[var(--tinta-media)]"
+                    className="max-w-[230px] truncate border-b border-[var(--grade)] px-2 py-1 text-[var(--tinta-media)]"
                     title={r.acao ?? ""}
                   >
                     {r.acao}
                   </td>
-                  <td className="whitespace-nowrap border-b border-[#eceae7] px-2 py-1">
+                  <td className="whitespace-nowrap border-b border-[var(--grade)] px-2 py-1">
                     <span className="flex items-center gap-1.5">
                       <span
                         aria-hidden
@@ -120,10 +120,10 @@ export function Detalhamento({
                       </span>
                     </span>
                   </td>
-                  <td className="border-b border-[#eceae7] px-2 py-1 text-right tabular-nums text-[var(--tinta-media)]">
+                  <td className="border-b border-[var(--grade)] px-2 py-1 text-right tabular-nums text-[var(--tinta-media)]">
                     {resolucao ?? ""}
                   </td>
-                  <td className="border-b border-[#eceae7] px-2 py-1 text-right tabular-nums font-semibold text-[var(--marca-terracotta-vermelho)]">
+                  <td className="border-b border-[var(--grade)] px-2 py-1 text-right tabular-nums font-semibold text-[var(--marca-terracotta-vermelho)]">
                     {atraso ?? ""}
                   </td>
                 </tr>
@@ -146,7 +146,7 @@ export function Detalhamento({
         <button
           type="button"
           onClick={() => setMostrando((m) => m + PAGINA * 4)}
-          className="mt-2 w-full rounded-md border border-[var(--borda)] bg-white py-1.5 text-xs font-medium text-[var(--tinta-media)] hover:bg-[var(--marca-gelo)]"
+          className="mt-2 w-full rounded-lg border border-[var(--borda)] bg-white py-1.5 text-xs font-medium text-[var(--tinta-media)] hover:bg-[var(--marca-gelo)]"
         >
           Mostrar mais ({linhas.length - mostrando} restantes)
         </button>

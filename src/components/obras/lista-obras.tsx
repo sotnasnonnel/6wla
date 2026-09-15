@@ -44,9 +44,9 @@ export function ListaObras({
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-7">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-[-0.01em] text-[var(--tinta-forte)]">
+          <h1 className="text-2xl font-bold tracking-[-0.02em] text-[var(--tinta-forte)]">
             Obras
           </h1>
           <p className="mt-0.5 text-sm text-[var(--tinta-fraca)]">
@@ -80,7 +80,7 @@ export function ListaObras({
             <li key={o.id}>
               <Link
                 href={`/obras/${o.id}/indicadores`}
-                className="group block rounded-md border border-[var(--borda)] bg-white p-4 transition hover:border-[var(--marca-terracotta)]"
+                className="group block rounded-xl border border-[var(--borda)] bg-white px-[22px] py-5 shadow-[var(--sombra-sm)] transition hover:border-[var(--marca-brand-200)] hover:shadow-[var(--sombra-md)]"
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-mono text-xs font-semibold text-[var(--marca-azul)]">
@@ -123,7 +123,7 @@ export function ListaObras({
                     </div>
                     {/* Barra de progresso: quanto da obra já saiu do caminho. */}
                     <div
-                      className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-[#eceae7]"
+                      className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-[var(--grade)]"
                       role="img"
                       aria-label={`${o.concluidas} de ${o.total} restrições concluídas`}
                     >

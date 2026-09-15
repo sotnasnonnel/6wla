@@ -46,7 +46,7 @@ export function AdminUsuarios({
       {erro ? <Alerta>{erro}</Alerta> : null}
       {ok ? <Alerta tipo="ok">{ok}</Alerta> : null}
       <Cartao>
-        <ul className="divide-y divide-[#eceae7]">
+        <ul className="divide-y divide-[var(--grade)]">
           {usuarios.map((u) => (
             <li
               key={u.id}

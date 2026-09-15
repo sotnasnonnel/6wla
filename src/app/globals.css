@@ -1,37 +1,58 @@
 @import "tailwindcss";
 
 /**
- * Paleta da marca 6WLA.
+ * Tokens de interface no padrão do app-phd (DESIGN_SYSTEM.md de lá): terracota
+ * #C44A28 com escala brand, azul petróleo, neutros slate, raio 8/12/16 e
+ * sombras suaves. Os nomes antigos (`--marca-*`, `--tinta-*`, `--borda`) foram
+ * mantidos e apontam para os valores novos, para que as telas mudem juntas.
  *
- * As cores de INTERFACE são as da marca, puras. As cores de DADO são
- * derivadas delas: o terracotta e o terracota avermelhado ficam a uma
- * distância de 4,5 um do outro (indistinguíveis lado a lado até para quem
- * enxerga todas as cores), e o azul da marca é escuro e dessaturado demais
- * para virar barra de gráfico — lê como cinza. Então a série de dados usa o
- * verde e o terracota avermelhado da marca, mais um azul clareado e um âmbar
- * puxado do terracotta. Esse conjunto passa em protanopia, deuteranopia e
- * tritanopia (validador da skill dataviz).
+ * Cores de DADO não moram aqui. A série dos gráficos (#00a49a, #2f6ea8,
+ * #e5a72c, #b85236) e a paleta de situação foram validadas para daltonismo
+ * com a skill dataviz: trocar a terracota da interface não mexe nelas.
  */
 :root {
   /* Marca */
-  --marca-terracotta: #c35e1e;
-  --marca-terracotta-escuro: #a54f19;
+  --marca-terracotta: #c44a28;
+  --marca-terracotta-escuro: #9a3412;
   --marca-terracotta-vermelho: #b85236;
   --marca-azul: #26405d;
   --marca-azul-claro: #35577c;
   --marca-verde: #00a49a;
-  --marca-gelo: #f2f2f2;
+  --marca-brand-50: #fdf0eb;
+  --marca-brand-100: #fce0d2;
+  --marca-brand-200: #f8c0a0;
+  --marca-anel: rgba(196, 74, 40, 0.12);
+  /* Era o "branco gelo" da marca; na interface virou o slate-100 do PHD
+     (hover, fundo de etiqueta neutra). */
+  --marca-gelo: #f1f5f9;
 
-  /* Superfícies e tinta */
+  /* Superfícies e tinta (slate) */
   --superficie: #ffffff;
-  --plano: var(--marca-gelo);
-  --tinta-forte: #1b1b1b;
-  --tinta-media: #4a4a4a;
-  --tinta-fraca: #7a7a7a;
-  --borda: #dcdcda;
-  --grade: #e4e2df;
+  --plano: #f8fafc;
+  --tinta-forte: #0f172a;
+  --tinta-media: #475569;
+  --tinta-fraca: #64748b;
+  --tinta-apagada: #94a3b8;
+  --borda: #e2e8f0;
+  --borda-forte: #cbd5e1;
+  --grade: #f1f5f9;
 
-  --background: var(--marca-gelo);
+  /* Semânticas */
+  --perigo: #ef4444;
+  --perigo-fundo: #fee2e2;
+  --perigo-tinta: #991b1b;
+  --aviso-fundo: #fef3c7;
+  --aviso-tinta: #92400e;
+  --sucesso-fundo: #d1fae5;
+  --sucesso-tinta: #065f46;
+
+  --sombra-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --sombra-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --sombra-xl:
+    0 20px 48px -8px rgba(0, 0, 0, 0.16), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+
+  --background: var(--plano);
   --foreground: var(--tinta-forte);
 }
 
@@ -46,7 +67,7 @@
   --color-marca-vermelho: var(--marca-terracotta-vermelho);
   --color-gelo: var(--marca-gelo);
   --color-borda: var(--borda);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -54,7 +75,8 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family:
-    var(--font-geist-sans),
+    var(--font-inter),
+    ui-sans-serif,
     system-ui,
     -apple-system,
     "Segoe UI",
@@ -67,10 +89,55 @@ body {
   outline-offset: 1px;
 }
 
+/* Campos de texto usam o anel do PHD no lugar do contorno (senão ficam dois). */
+:where(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea
+):focus-visible {
+  outline: none;
+  border-color: var(--marca-terracotta);
+  box-shadow: 0 0 0 3px var(--marca-anel);
+}
+
 /* Barra de rolagem discreta nos painéis com scroll interno. */
 @supports (scrollbar-width: thin) {
   .rolagem-fina {
     scrollbar-width: thin;
-    scrollbar-color: #c9c7c4 transparent;
+    scrollbar-color: var(--borda-forte) transparent;
+  }
+}
+
+/* Entrada do modal: fundo aparece, painel sobe um pouco (slideUp do PHD). */
+@keyframes modal-sobe {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes modal-fundo {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+dialog.modal[open] {
+  animation: modal-sobe 0.2s ease-out;
+}
+dialog.modal[open]::backdrop {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
+  animation: modal-fundo 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.modal[open],
+  dialog.modal[open]::backdrop {
+    animation: none;
   }
 }

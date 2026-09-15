@@ -129,7 +129,7 @@ export function ChecklistRestricao({ restricaoId, tarefas }: Props) {
         </p>
       )}
 
-      <ul className="divide-y divide-[#eceae7]">
+      <ul className="divide-y divide-[var(--grade)]">
         {lista.map((t) => (
           <li key={t.id} className="group flex items-start gap-2.5 py-1.5">
             <input
@@ -191,7 +191,7 @@ export function ChecklistRestricao({ restricaoId, tarefas }: Props) {
               disabled={pendenteNoServidor(t)}
               aria-label={`Apagar tarefa: ${t.texto}`}
               title="Apagar tarefa"
-              className="shrink-0 rounded px-2 py-0.5 text-xs text-[var(--tinta-fraca)] opacity-100 transition group-hover:opacity-100 hover:bg-[#fbeeea] hover:text-[var(--marca-terracotta-vermelho)] focus-visible:opacity-100 sm:opacity-0"
+              className="shrink-0 rounded px-2 py-0.5 text-xs text-[var(--tinta-fraca)] opacity-100 transition group-hover:opacity-100 hover:bg-[var(--perigo-fundo)] hover:text-[var(--marca-terracotta-vermelho)] focus-visible:opacity-100 sm:opacity-0"
             >
               Apagar
             </button>

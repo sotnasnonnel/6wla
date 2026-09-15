@@ -35,7 +35,7 @@ export default async function PaginaNotificacoes() {
             <form action={marcaTodasLidasForm}>
               <button
                 type="submit"
-                className="rounded-md border border-[var(--borda)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--tinta-media)] transition hover:border-[var(--marca-terracotta)] hover:text-[var(--marca-terracotta)]"
+                className="rounded-lg border border-[var(--borda)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--tinta-media)] transition hover:border-[var(--marca-terracotta)] hover:text-[var(--marca-terracotta)]"
               >
                 Marcar todas como lidas
               </button>
@@ -50,13 +50,13 @@ export default async function PaginaNotificacoes() {
           descricao="Você recebe um aviso aqui quando alguém menciona você num chat ou atribui uma restrição a você."
         />
       ) : (
-        <ul className="divide-y divide-[var(--borda)] rounded-lg border border-[var(--borda)] bg-white">
+        <ul className="divide-y divide-[var(--grade)] overflow-hidden rounded-xl border border-[var(--borda)] bg-white shadow-[var(--sombra-sm)]">
           {notificacoes.map((n) => {
             const href = `/obras/${n.restricao.obra_id}/restricoes/${n.restricao.id}`;
             return (
               <li
                 key={n.id}
-                className={`flex gap-3 px-4 py-3 text-sm ${n.lida_em ? "bg-white" : "bg-[#eaf0f6]"}`}
+                className={`flex gap-3 px-4 py-3 text-sm ${n.lida_em ? "bg-white" : "bg-[#eff6ff]"}`}
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-[var(--tinta-forte)]">

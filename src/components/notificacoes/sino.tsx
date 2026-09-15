@@ -50,7 +50,7 @@ export function Sino({ userId, inicial }: { userId: string; inicial: number }) {
   return (
     <Link
       href="/notificacoes"
-      className="relative rounded-md p-1.5 text-[var(--tinta-media)] hover:bg-[var(--marca-gelo)]"
+      className="relative rounded-lg p-1.5 text-[var(--tinta-media)] hover:bg-[var(--marca-gelo)]"
       aria-label={`Notificações: ${total} não lidas`}
     >
       <svg

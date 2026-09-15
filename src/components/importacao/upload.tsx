@@ -29,7 +29,7 @@ export function FormUpload({
           type="file"
           accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           required
-          className="block w-full text-sm text-[var(--tinta-media)] file:mr-3 file:rounded-md file:border file:border-[var(--borda)] file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-[var(--marca-gelo)]"
+          className="block w-full text-sm text-[var(--tinta-media)] file:mr-3 file:rounded-lg file:border file:border-[var(--borda)] file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-[var(--marca-gelo)]"
         />
       </div>
       <div className="max-w-xs">

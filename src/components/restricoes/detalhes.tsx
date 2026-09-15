@@ -192,7 +192,7 @@ export function DetalhesRestricao({ restricao: r, membros, papel }: Props) {
             defaultValue={v(r.data_limite)}
           />
           {r.prazo_original && r.prazo_original !== r.data_limite ? (
-            <p className="mt-1 text-xs text-[#8a4a12]">
+            <p className="mt-1 text-xs text-[var(--aviso-tinta)]">
               Prazo original {r.prazo_original.split("-").reverse().join("/")} ·{" "}
               {r.reprogramacoes} reprogramação(ões)
             </p>
@@ -328,7 +328,7 @@ export function DetalhesRestricao({ restricao: r, membros, papel }: Props) {
       </div>
 
       {Object.keys(r.extras as Record<string, unknown>).length > 0 ? (
-        <details className="rounded-md border border-[var(--borda)] bg-[var(--marca-gelo)] p-3 text-sm">
+        <details className="rounded-lg border border-[var(--borda)] bg-[var(--marca-gelo)] p-3 text-sm">
           <summary className="cursor-pointer font-medium text-[var(--tinta-media)]">
             Outras colunas da planilha
           </summary>

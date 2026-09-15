@@ -17,7 +17,7 @@ import {
  *   - eixo e grade recuados, o dado é que tem contraste.
  */
 
-const TINTA = { forte: "#1b1b1b", media: "#4a4a4a", fraca: "#7a7a7a" } as const;
+const TINTA = { forte: "#0f172a", media: "#475569", fraca: "#64748b" } as const;
 
 export function CartaoKpi({
   rotulo,
@@ -172,7 +172,7 @@ export function BarrasEmpilhadas({
               title={`${g.chave}: ${g.total}`}
               className={`flex w-full items-center gap-2 rounded px-1 py-0.5 text-left transition ${
                 aoClicar ? "hover:bg-[var(--marca-gelo)]" : "cursor-default"
-              } ${ativa ? "bg-[#fbeedd] ring-1 ring-[var(--marca-terracotta)]" : ""}`}
+              } ${ativa ? "bg-[var(--marca-brand-50)] ring-1 ring-[var(--marca-terracotta)]" : ""}`}
             >
               <span
                 className="shrink-0 truncate text-xs text-[var(--tinta-media)]"
@@ -209,7 +209,7 @@ export function BarrasEmpilhadas({
                           <span
                             className="px-0.5 text-[10px] font-semibold tabular-nums"
                             style={{
-                              color: s === "no_prazo" ? "#3d2a00" : "#ffffff",
+                              color: s === "no_prazo" ? "#422006" : "#ffffff",
                             }}
                           >
                             {v}

@@ -61,7 +61,7 @@ export default async function PaginaRestricao({
         >
           ← Voltar à lista
         </Link>
-        <h1 className="flex min-w-0 items-center gap-2 text-base font-semibold text-[var(--tinta-forte)] sm:text-lg">
+        <h1 className="flex min-w-0 items-center gap-2 text-lg font-bold tracking-[-0.02em] text-[var(--tinta-forte)] sm:text-2xl">
           <span className="font-mono text-[var(--marca-terracotta)]">
             {formataNumero(restricao.numero)}
           </span>
@@ -85,7 +85,7 @@ export default async function PaginaRestricao({
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
         <div className="space-y-4">
-          <section className="rounded-lg border border-[var(--borda)] bg-white p-3 shadow-sm sm:p-4">
+          <section className="rounded-xl border border-[var(--borda)] bg-white p-4 shadow-[var(--sombra-sm)] sm:px-[22px] sm:py-5">
             <h2 className="mb-3 text-sm font-semibold text-[var(--tinta-forte)]">
               Detalhes
             </h2>
@@ -95,7 +95,7 @@ export default async function PaginaRestricao({
               papel={papel}
             />
           </section>
-          <section className="rounded-lg border border-[var(--borda)] bg-white p-3 shadow-sm sm:p-4">
+          <section className="rounded-xl border border-[var(--borda)] bg-white p-4 shadow-[var(--sombra-sm)] sm:px-[22px] sm:py-5">
             <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--tinta-forte)]">
               Checklist
               {tarefas.length > 0 ? (
@@ -108,7 +108,7 @@ export default async function PaginaRestricao({
             </h2>
             <ChecklistRestricao restricaoId={restricaoId} tarefas={tarefas} />
           </section>
-          <section className="rounded-lg border border-[var(--borda)] bg-white p-3 shadow-sm sm:p-4">
+          <section className="rounded-xl border border-[var(--borda)] bg-white p-4 shadow-[var(--sombra-sm)] sm:px-[22px] sm:py-5">
             <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--tinta-forte)]">
               Anexos
               {anexos.length > 0 ? (
@@ -121,7 +121,7 @@ export default async function PaginaRestricao({
               papel={papel}
             />
           </section>
-          <section className="rounded-lg border border-[var(--borda)] bg-white p-3 shadow-sm sm:p-4">
+          <section className="rounded-xl border border-[var(--borda)] bg-white p-4 shadow-[var(--sombra-sm)] sm:px-[22px] sm:py-5">
             <h2 className="mb-3 text-sm font-semibold text-[var(--tinta-forte)]">
               Histórico de alterações
             </h2>

@@ -113,7 +113,7 @@ export function AnexosRestricao({ restricaoId, anexos, papel }: Props) {
             : "Nenhum anexo nesta restrição."}
         </p>
       ) : (
-        <ul className="divide-y divide-[#eceae7]">
+        <ul className="divide-y divide-[var(--grade)]">
           {anexos.map((a) => (
             <li key={a.id} className="flex items-center gap-1 py-2">
               <button
@@ -129,7 +129,7 @@ export function AnexosRestricao({ restricaoId, anexos, papel }: Props) {
                   // Imagem em verde, resto em cinza: dá para varrer a lista e
                   // achar a foto sem ler nome de arquivo.
                   style={{
-                    background: ehImagem(a.tipo_mime) ? "#00a49a" : "#8a8783",
+                    background: ehImagem(a.tipo_mime) ? "#00a49a" : "#94a3b8",
                   }}
                 >
                   {tipoDeArquivo(a.nome, a.tipo_mime).slice(0, 4)}
@@ -160,7 +160,7 @@ export function AnexosRestricao({ restricaoId, anexos, papel }: Props) {
                   onClick={() => apagar(a)}
                   disabled={ocupado}
                   title="Apagar anexo"
-                  className="shrink-0 rounded px-2 py-1 text-xs text-[var(--tinta-fraca)] transition hover:bg-[#fbeeea] hover:text-[var(--marca-terracotta-vermelho)] disabled:opacity-60"
+                  className="shrink-0 rounded px-2 py-1 text-xs text-[var(--tinta-fraca)] transition hover:bg-[var(--perigo-fundo)] hover:text-[var(--marca-terracotta-vermelho)] disabled:opacity-60"
                 >
                   Apagar
                 </button>

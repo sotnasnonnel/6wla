@@ -15,6 +15,12 @@ import {
 import { RodapeSidebar } from "@/components/layout/rodape-sidebar";
 import { SeletorWorkspace } from "@/components/workspaces/seletor";
 
+const PAPEL_ROTULO = {
+  admin: "Administrador",
+  gestor: "Gestor",
+  membro: "Membro",
+} as const;
+
 export default async function LayoutApp({
   children,
 }: {
@@ -51,6 +57,12 @@ export default async function LayoutApp({
     );
   }
 
+  const rotuloPapel = perfil.admin
+    ? "Administrador geral"
+    : papel
+      ? PAPEL_ROTULO[papel]
+      : "Sem workspace";
+
   return (
     <div className="flex min-h-screen bg-[var(--plano)]">
       <Sidebar
@@ -58,17 +70,8 @@ export default async function LayoutApp({
         grupoAdmin={grupoAdmin.itens.length > 0 ? grupoAdmin : null}
         podeImportar={ehGestor(papel)}
         inicialColapsada={colapsada}
-        rodape={
-          <RodapeSidebar
-            nome={perfil.nome}
-            naoLidas={naoLidas}
-            userId={perfil.id}
-          />
-        }
-      />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-[var(--borda)] bg-white px-4 pl-14 md:pl-4">
-          {atual ? (
+        workspace={
+          atual ? (
             <SeletorWorkspace
               atualId={atual.id}
               lista={lista.map((w) => ({
@@ -77,12 +80,21 @@ export default async function LayoutApp({
                 nome: w.nome,
               }))}
             />
-          ) : null}
-        </header>
-        <main className="min-w-0 flex-1 px-3 py-4 sm:px-4 sm:py-5">
-          {children}
-        </main>
-      </div>
+          ) : null
+        }
+        rodape={
+          <RodapeSidebar
+            nome={perfil.nome}
+            papel={rotuloPapel}
+            naoLidas={naoLidas}
+            userId={perfil.id}
+          />
+        }
+      />
+      {/* Sem topbar no desktop, como no app-phd: a página começa no título. */}
+      <main className="min-w-0 flex-1 px-4 pt-[4.5rem] pb-6 sm:px-6 md:px-8 md:pt-7 md:pb-8">
+        {children}
+      </main>
     </div>
   );
 }

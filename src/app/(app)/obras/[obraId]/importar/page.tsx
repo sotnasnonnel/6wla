@@ -47,7 +47,7 @@ export default async function PaginaImportar({
           <h2 className="mb-2 text-sm font-semibold text-[var(--tinta-forte)]">
             Importações anteriores
           </h2>
-          <ul className="divide-y divide-[#eceae7] text-sm">
+          <ul className="divide-y divide-[var(--grade)] text-sm">
             {historico.map((h) => (
               <li
                 key={h.id}

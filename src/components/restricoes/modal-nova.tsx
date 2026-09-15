@@ -162,7 +162,7 @@ export function ModalNovaRestricao({
           </CampoRotulado>
         </div>
 
-        <fieldset className="rounded-md border border-[var(--borda)] p-3">
+        <fieldset className="rounded-lg border border-[var(--borda)] p-3">
           <legend className="px-1 text-[13px] font-medium text-[var(--tinta-media)]">
             Prazos
           </legend>
@@ -195,7 +195,7 @@ export function ModalNovaRestricao({
           </div>
         </fieldset>
 
-        <fieldset className="rounded-md border border-[var(--borda)] p-3">
+        <fieldset className="rounded-lg border border-[var(--borda)] p-3">
           <legend className="px-1 text-[13px] font-medium text-[var(--tinta-media)]">
             Classificação
           </legend>
@@ -237,7 +237,7 @@ export function ModalNovaRestricao({
           </div>
         </fieldset>
 
-        <fieldset className="rounded-md border border-[var(--borda)] p-3">
+        <fieldset className="rounded-lg border border-[var(--borda)] p-3">
           <legend className="px-1 text-[13px] font-medium text-[var(--tinta-media)]">
             Atividade impactada
           </legend>

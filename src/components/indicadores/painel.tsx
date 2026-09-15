@@ -188,7 +188,7 @@ export function PainelIndicadores({
             setF({ ...f, situacao: e.target.value as Situacao | "" })
           }
           aria-label="Situação"
-          className="min-w-0 flex-1 rounded-md border border-[var(--borda)] bg-white px-2 py-2 text-sm sm:flex-none sm:py-1.5"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--borda)] bg-white px-2 py-2 text-sm sm:flex-none sm:py-1.5"
         >
           <option value="">Todas as situações</option>
           {SITUACOES_EMPILHADAS.map((s) => (
@@ -201,7 +201,7 @@ export function PainelIndicadores({
           value={f.semana}
           onChange={(e) => setF({ ...f, semana: e.target.value })}
           aria-label="Semana"
-          className="min-w-0 flex-1 rounded-md border border-[var(--borda)] bg-white px-2 py-2 text-sm sm:flex-none sm:py-1.5"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--borda)] bg-white px-2 py-2 text-sm sm:flex-none sm:py-1.5"
         >
           <option value="">Todas as semanas</option>
           {semanasDisponiveis.map(([chave, rotulo]) => (
@@ -215,7 +215,7 @@ export function PainelIndicadores({
           onChange={(e) => setF({ ...f, busca: e.target.value })}
           placeholder="Buscar…"
           aria-label="Buscar"
-          className="w-full rounded-md border border-[var(--borda)] px-2.5 py-2 text-base focus:border-[var(--marca-terracotta)] focus:outline-none sm:w-48 sm:py-1.5 sm:text-sm"
+          className="w-full rounded-lg border border-[var(--borda)] px-2.5 py-2 text-base focus:border-[var(--marca-terracotta)] focus:outline-none sm:w-48 sm:py-1.5 sm:text-sm"
         />
         {chips.length > 0 ? (
           <>
@@ -225,7 +225,7 @@ export function PainelIndicadores({
                   key={c.k}
                   type="button"
                   onClick={() => limpaChip(c.k)}
-                  className="flex items-center gap-1 rounded-full bg-[#e6e4e1] px-2.5 py-1 text-xs text-[var(--tinta-media)] hover:bg-[#d9d6d2]"
+                  className="flex items-center gap-1 rounded-full bg-[var(--marca-gelo)] px-2.5 py-1 text-xs text-[var(--tinta-media)] hover:bg-[var(--borda)]"
                   title="Remover filtro"
                 >
                   {c.txt} <span aria-hidden>×</span>

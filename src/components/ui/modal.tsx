@@ -58,14 +58,14 @@ export function Modal({
       }}
       aria-labelledby={idTitulo}
       aria-describedby={descricao ? idDescricao : undefined}
-      className="m-auto w-[calc(100vw-1.5rem)] rounded-lg sm:w-[calc(100vw-2rem)] border border-[var(--borda)] bg-white p-0 text-[var(--tinta-forte)] shadow-xl backdrop:bg-[#26405d]/45"
+      className="modal m-auto w-[calc(100vw-1.5rem)] rounded-2xl border-0 bg-white p-0 text-[var(--tinta-forte)] shadow-[var(--sombra-xl)] sm:w-[calc(100vw-2rem)]"
       style={{ maxWidth: largura }}
     >
       {aberto ? (
-        <div className="flex max-h-[85dvh] flex-col">
-          <header className="flex items-start justify-between gap-4 border-b border-[var(--borda)] px-4 py-3.5 sm:px-5">
+        <div className="flex max-h-[90dvh] flex-col">
+          <header className="flex items-start justify-between gap-4 px-5 pt-5 pb-3 sm:px-7 sm:pt-7">
             <div className="min-w-0">
-              <h2 id={idTitulo} className="text-base font-semibold">
+              <h2 id={idTitulo} className="text-lg font-bold tracking-[-0.01em]">
                 {titulo}
               </h2>
               {descricao ? (
@@ -81,7 +81,7 @@ export function Modal({
               type="button"
               onClick={aoFechar}
               aria-label="Fechar"
-              className="-mr-1 -mt-1 rounded p-1.5 text-[var(--tinta-fraca)] transition hover:bg-[var(--marca-gelo)] hover:text-[var(--tinta-forte)]"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--marca-gelo)] text-[var(--tinta-fraca)] transition hover:bg-[var(--borda)] hover:text-[var(--tinta-forte)]"
             >
               <svg
                 width="16"
@@ -97,12 +97,12 @@ export function Modal({
             </button>
           </header>
 
-          <div className="rolagem-fina min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          <div className="rolagem-fina min-h-0 flex-1 overflow-y-auto px-5 py-3 sm:px-7">
             {children}
           </div>
 
           {rodape ? (
-            <footer className="flex items-center justify-end gap-2 border-t border-[var(--borda)] bg-[#fbfaf9] px-4 py-3 sm:px-5">
+            <footer className="flex items-center justify-end gap-2 px-5 pt-3 pb-5 sm:px-7 sm:pb-7">
               {rodape}
             </footer>
           ) : null}

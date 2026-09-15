@@ -70,9 +70,9 @@ export function PessoasWorkspace({
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-7">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-[-0.01em] text-[var(--tinta-forte)]">
+          <h1 className="text-2xl font-bold tracking-[-0.02em] text-[var(--tinta-forte)]">
             Pessoas
           </h1>
           <p className="mt-0.5 text-sm text-[var(--tinta-fraca)]">
@@ -116,7 +116,7 @@ export function PessoasWorkspace({
           }
         />
       ) : (
-        <ul className="divide-y divide-[#eceae7] overflow-hidden rounded-md border border-[var(--borda)] bg-white">
+        <ul className="divide-y divide-[var(--grade)] overflow-hidden rounded-xl border border-[var(--borda)] bg-white shadow-[var(--sombra-sm)]">
           {membros.map((m) => {
             const euMesmo = m.id === meuId && !souAdminGlobal;
             return (
@@ -165,7 +165,7 @@ export function PessoasWorkspace({
                       `${m.nome} agora é ${ev.target.value}.`,
                     );
                   }}
-                  className="rounded-md border border-[var(--borda)] bg-white px-2 py-1.5 text-xs text-[var(--tinta-media)] disabled:bg-[var(--marca-gelo)] sm:py-1"
+                  className="rounded-lg border border-[var(--borda)] bg-white px-2 py-1.5 text-xs text-[var(--tinta-media)] disabled:bg-[var(--marca-gelo)] sm:py-1"
                 >
                   {PAPEIS.map((p) => (
                     <option key={p.valor} value={p.valor}>

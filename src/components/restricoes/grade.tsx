@@ -374,7 +374,7 @@ export function GradeRestricoes({
                     {atrasada ? ` (${Math.abs(dias ?? 0)}d)` : ""}
                     {r.reprogramacoes > 0 ? (
                       <span
-                        className="ml-1 text-xs text-[#8a4a12]"
+                        className="ml-1 text-xs text-[var(--aviso-tinta)]"
                         title={`${r.reprogramacoes} reprogramação(ões); prazo original ${formataData(r.prazo_original)}`}
                       >
                         ↻{r.reprogramacoes}
@@ -492,7 +492,7 @@ export function GradeRestricoes({
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar…"
-          className="min-w-0 flex-1 rounded-md border border-[var(--borda)] px-2.5 py-2 text-sm focus:border-[var(--marca-terracotta)] focus:outline-none sm:w-56 sm:flex-none sm:py-1.5"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--borda)] px-2.5 py-2 text-sm focus:border-[var(--marca-terracotta)] focus:outline-none sm:w-56 sm:flex-none sm:py-1.5"
         />
 
         {/* No celular, um botão só abre o resto dos filtros. */}
@@ -500,7 +500,7 @@ export function GradeRestricoes({
           type="button"
           onClick={() => setFiltrosAbertos((v) => !v)}
           aria-expanded={filtrosAbertos}
-          className="flex shrink-0 items-center gap-1.5 rounded-md border border-[var(--borda)] bg-white px-2.5 py-2 text-sm text-[var(--tinta-media)] sm:hidden"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--borda)] bg-white px-2.5 py-2 text-sm text-[var(--tinta-media)] sm:hidden"
         >
           Filtros
           {filtrosAtivos > 0 ? (
@@ -560,7 +560,7 @@ export function GradeRestricoes({
             onChange={(e) =>
               setFiltroStatus(e.target.value as typeof filtroStatus)
             }
-            className="w-full rounded-md border border-[var(--borda)] bg-white px-2 py-2 text-base sm:w-auto sm:py-1.5 sm:text-sm"
+            className="w-full rounded-lg border border-[var(--borda)] bg-white px-2 py-2 text-base sm:w-auto sm:py-1.5 sm:text-sm"
           >
             <option value="abertas">Abertas</option>
             <option value="todas">Todas</option>
@@ -573,7 +573,7 @@ export function GradeRestricoes({
           <select
             value={filtroResp}
             onChange={(e) => setFiltroResp(e.target.value)}
-            className="w-full rounded-md border border-[var(--borda)] bg-white px-2 py-2 text-base sm:w-auto sm:max-w-56 sm:py-1.5 sm:text-sm"
+            className="w-full rounded-lg border border-[var(--borda)] bg-white px-2 py-2 text-base sm:w-auto sm:max-w-56 sm:py-1.5 sm:text-sm"
           >
             <option value="">Todos os responsáveis</option>
             <option value="__sem__">Sem responsável</option>
@@ -601,12 +601,12 @@ export function GradeRestricoes({
             <button
               type="button"
               onClick={() => setMenuColunas((v) => !v)}
-              className="rounded-md border border-[var(--borda)] bg-white px-2.5 py-1.5 text-sm hover:bg-[var(--marca-gelo)]"
+              className="rounded-lg border border-[var(--borda)] bg-white px-2.5 py-1.5 text-sm hover:bg-[var(--marca-gelo)]"
             >
               Colunas
             </button>
             {menuColunas ? (
-              <div className="absolute right-0 z-30 mt-1 max-h-80 w-56 overflow-auto rounded-md border border-[var(--borda)] bg-white p-2 shadow-lg">
+              <div className="absolute right-0 z-30 mt-1 max-h-80 w-56 overflow-auto rounded-lg border border-[var(--borda)] bg-white p-2 shadow-lg">
                 {tabela.getAllLeafColumns().map((c) => (
                   <label
                     key={c.id}
@@ -649,14 +649,14 @@ export function GradeRestricoes({
       </div>
 
       <div
-        className="hidden overflow-auto rounded-md border border-[var(--borda)] bg-white md:block"
+        className="hidden overflow-auto rounded-xl border border-[var(--borda)] bg-white shadow-[var(--sombra-sm)] md:block"
         style={{ maxHeight: "calc(100vh - 230px)" }}
       >
         <table
           className="border-separate border-spacing-0 text-sm"
           style={{ width: tabela.getTotalSize() }}
         >
-          <thead className="sticky top-0 z-10 bg-[var(--marca-gelo)]">
+          <thead className="sticky top-0 z-10 bg-[var(--plano)]">
             {tabela.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (
@@ -670,7 +670,7 @@ export function GradeRestricoes({
                           ? "descending"
                           : "none"
                     }
-                    className="relative border-b border-r border-[var(--borda)] px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--tinta-media)] select-none"
+                    className="relative border-b border-r border-[var(--borda)] px-2.5 py-2.5 text-left text-[0.72rem] font-bold uppercase tracking-[0.05em] text-[var(--tinta-media)] select-none"
                   >
                     <button
                       type="button"
@@ -700,13 +700,13 @@ export function GradeRestricoes({
               return (
                 <tr
                   key={row.id}
-                  className={`${atrasada ? "bg-[#fbeeea]" : "odd:bg-white even:bg-[#faf9f8]"} hover:bg-[#fdf6f0]`}
+                  className={`${atrasada ? "bg-[var(--marca-brand-50)]" : "odd:bg-white even:bg-[#fcfcfd]"} hover:bg-[var(--plano)]`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
                       style={{ width: cell.column.getSize() }}
-                      className="border-b border-r border-[#eceae7] p-0 align-top"
+                      className="border-b border-r border-[var(--grade)] p-0 align-top"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

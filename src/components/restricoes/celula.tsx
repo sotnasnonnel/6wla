@@ -130,14 +130,14 @@ export function CelulaEditavel({
         onKeyDown={(ev) => {
           if (ev.key === "Enter" || ev.key === "F2") abrir();
         }}
-        className={`relative min-h-[30px] w-full px-2 py-1 text-sm ${desabilitada ? "cursor-default text-[var(--tinta-fraca)]" : "cursor-text hover:bg-[#fbeedd] focus:bg-[#fbeedd] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--marca-terracotta)]"} ${className}`}
+        className={`relative min-h-[30px] w-full px-2 py-1 text-sm ${desabilitada ? "cursor-default text-[var(--tinta-fraca)]" : "cursor-text hover:bg-[var(--marca-brand-50)] focus:bg-[var(--marca-brand-50)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--marca-terracotta)]"} ${className}`}
       >
         {exibicao ??
-          (valor ? valor : <span className="text-[#c9c7c4]">—</span>)}
+          (valor ? valor : <span className="text-[var(--borda-forte)]">—</span>)}
         {salvo ? (
           <span
             aria-hidden
-            className="absolute right-1 top-1 text-[10px] font-bold text-[#006b66]"
+            className="absolute right-1 top-1 text-[10px] font-bold text-[var(--sucesso-tinta)]"
           >
             ✓
           </span>

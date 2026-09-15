@@ -20,10 +20,10 @@ import {
  * das barras da esquerda. O alinhamento é derivado, não escolhido.
  */
 
-const GRADE = "#e4e2df";
-const TINTA_FRACA = "#7a7a7a";
+const GRADE = "#e2e8f0";
+const TINTA_FRACA = "#64748b";
 const LINHA_ACUM = "#26405d";
-const CORTE = "#c35e1e";
+const CORTE = "#c44a28";
 
 /** Fração acumulada que define as "poucas vitais". */
 const ALVO = 0.8;
@@ -201,7 +201,7 @@ export function ParetoCausas({
                   textAnchor="middle"
                   fontSize={11}
                   fontWeight={600}
-                  fill="#1b1b1b"
+                  fill="#0f172a"
                   stroke="#ffffff"
                   strokeWidth={3}
                   paintOrder="stroke"
@@ -213,7 +213,7 @@ export function ParetoCausas({
                   y={T + alturaPlot + 14}
                   textAnchor="middle"
                   fontSize={9}
-                  fill={dentro ? "#1b1b1b" : TINTA_FRACA}
+                  fill={dentro ? "#0f172a" : TINTA_FRACA}
                   fontWeight={dentro ? 600 : 400}
                 >
                   {encurta(g.chave, Math.floor(passo / 5.2))}
@@ -251,7 +251,7 @@ export function ParetoCausas({
                 textAnchor={dentroDaBarra ? "start" : "middle"}
                 fontSize={10}
                 fontWeight={600}
-                fill="#1b1b1b"
+                fill="#0f172a"
                 stroke="#ffffff"
                 strokeWidth={3}
                 paintOrder="stroke"
@@ -265,7 +265,7 @@ export function ParetoCausas({
       </div>
 
       <div
-        className="pointer-events-none absolute right-2 top-0 rounded-md border border-[var(--borda)] bg-white px-2 py-1 text-xs shadow-sm"
+        className="pointer-events-none absolute right-2 top-0 rounded-lg border border-[var(--borda)] bg-white px-2 py-1 text-xs shadow-sm"
         style={{ visibility: p0 ? "visible" : "hidden" }}
       >
         {p0 ? (

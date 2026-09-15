@@ -34,9 +34,9 @@ export function ListaWorkspaces({
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-7">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-[-0.01em] text-[var(--tinta-forte)]">
+          <h1 className="text-2xl font-bold tracking-[-0.02em] text-[var(--tinta-forte)]">
             Workspaces
           </h1>
           <p className="mt-0.5 text-sm text-[var(--tinta-fraca)]">
@@ -54,7 +54,7 @@ export function ListaWorkspaces({
           acao={<Botao onClick={() => setAberto(true)}>Criar workspace</Botao>}
         />
       ) : (
-        <ul className="divide-y divide-[#eceae7] overflow-hidden rounded-md border border-[var(--borda)] bg-white">
+        <ul className="divide-y divide-[var(--grade)] overflow-hidden rounded-xl border border-[var(--borda)] bg-white shadow-[var(--sombra-sm)]">
           {workspaces.map((w) => (
             <li
               key={w.id}

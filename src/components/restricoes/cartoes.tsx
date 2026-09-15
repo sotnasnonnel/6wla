@@ -33,7 +33,7 @@ export function CartoesRestricoes({
 }) {
   if (restricoes.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-[#d5d2ce] bg-white px-4 py-10 text-center text-sm text-[var(--tinta-fraca)]">
+      <p className="rounded-lg border border-dashed border-[var(--borda-forte)] bg-white px-4 py-10 text-center text-sm text-[var(--tinta-fraca)]">
         Nenhuma restrição com esses filtros.
       </p>
     );
@@ -51,9 +51,9 @@ export function CartoesRestricoes({
           <li key={r.id}>
             <Link
               href={`/obras/${obraId}/restricoes/${r.id}`}
-              className={`block rounded-md border p-3 transition active:bg-[#fdf6f0] ${
+              className={`block rounded-lg border p-3 transition active:bg-[var(--marca-brand-50)] ${
                 atrasada
-                  ? "border-[#e6c8bf] bg-[#fbeeea]"
+                  ? "border-[var(--marca-brand-200)] bg-[var(--marca-brand-50)]"
                   : "border-[var(--borda)] bg-white"
               }`}
             >

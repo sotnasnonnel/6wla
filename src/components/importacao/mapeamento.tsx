@@ -117,7 +117,7 @@ export function Mapeamento({
           ) : null}
         </div>
         {erroIA ? <Alerta>{erroIA}</Alerta> : null}
-        <div className="divide-y divide-[#eceae7]">
+        <div className="divide-y divide-[var(--grade)]">
           {CAMPOS_IMPORTAVEIS.map((campo) => (
             <div
               key={campo}
@@ -190,7 +190,7 @@ export function Mapeamento({
                     {cabecalhos.map((c) => (
                       <td
                         key={c}
-                        className="max-w-[220px] truncate border-b border-[#eceae7] px-2 py-1 text-[var(--tinta-media)]"
+                        className="max-w-[220px] truncate border-b border-[var(--grade)] px-2 py-1 text-[var(--tinta-media)]"
                         title={String(l[c] ?? "")}
                       >
                         {l[c] === null || l[c] === undefined
@@ -247,9 +247,9 @@ export function Mapeamento({
             ).map((opcao) => (
               <label
                 key={opcao.valor}
-                className={`flex cursor-pointer gap-2 rounded-md border p-2 transition ${
+                className={`flex cursor-pointer gap-2 rounded-lg border p-2 transition ${
                   modo === opcao.valor
-                    ? "border-[var(--marca-terracotta)] bg-[#fdf6f0]"
+                    ? "border-[var(--marca-terracotta)] bg-[var(--marca-brand-50)]"
                     : "border-[var(--borda)] hover:bg-[var(--marca-gelo)]"
                 } ${!mapa.codigo && opcao.valor === "atualizar" ? "cursor-not-allowed opacity-60" : ""}`}
               >

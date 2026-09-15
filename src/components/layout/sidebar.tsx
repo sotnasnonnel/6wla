@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -69,12 +70,15 @@ export function Sidebar({
   obras,
   grupoAdmin,
   rodape,
+  workspace,
   inicialColapsada = false,
   podeImportar = false,
 }: {
   obras: Obra[];
   grupoAdmin: GrupoMenu | null;
   rodape: ReactNode;
+  /** Seletor de workspace, montado no servidor. */
+  workspace: ReactNode;
   inicialColapsada?: boolean;
   podeImportar?: boolean;
 }) {
@@ -126,6 +130,7 @@ export function Sidebar({
   const grupos: GrupoMenu[] = obra
     ? [
         {
+          titulo: "Obra",
           itens: [
             {
               href: `/obras/${obra.id}/indicadores`,
@@ -150,34 +155,44 @@ export function Sidebar({
           ],
         },
       ]
-    : [{ itens: [{ href: "/obras", rotulo: "Obras", icone: "obras" }] }];
+    : [
+        {
+          titulo: "Módulos",
+          itens: [{ href: "/obras", rotulo: "Obras", icone: "obras" }],
+        },
+      ];
 
   if (grupoAdmin && grupoAdmin.itens.length > 0) grupos.push(grupoAdmin);
 
-  // No celular a gaveta abre sempre larga: colapsar é escolha de desktop, e
-  // uma gaveta de 60px sobre a tela inteira não ajuda ninguém.
-  const largura = colapsada ? 60 : 216;
+  // Largura do app-phd: 256px, recolhe para 64px. No celular a gaveta abre
+  // sempre larga — colapsar é escolha de desktop.
+  const largura = colapsada ? 64 : 256;
+  const soLargo = colapsada ? "md:hidden" : "";
 
   return (
     <>
-      <button
-        ref={gatilho}
-        type="button"
-        onClick={() => setGaveta({ aberta: true, caminho })}
-        aria-label="Abrir menu"
-        aria-controls="menu-lateral"
-        aria-expanded={gaveta.aberta}
-        className="fixed left-3 top-3 z-40 rounded-md bg-[var(--marca-azul)] p-2 text-white shadow-md md:hidden"
-      >
-        <Icone nome="menu" />
-      </button>
+      {/* Celular: barra fina com menu e logo (a `.mobile-topbar` do PHD). */}
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-[var(--borda)] bg-white px-3 md:hidden">
+        <button
+          ref={gatilho}
+          type="button"
+          onClick={() => setGaveta({ aberta: true, caminho })}
+          aria-label="Abrir menu"
+          aria-controls="menu-lateral"
+          aria-expanded={gaveta.aberta}
+          className="grid h-9 w-9 place-items-center rounded-lg text-[var(--tinta-media)] transition hover:bg-[var(--marca-gelo)]"
+        >
+          <Icone nome="menu" />
+        </button>
+        <Logo />
+      </div>
 
       {gaveta.aberta ? (
         <button
           type="button"
           aria-label="Fechar menu"
           onClick={() => fechaGaveta(true)}
-          className="fixed inset-0 z-40 bg-[#26405d]/45 md:hidden"
+          className="fixed inset-0 z-40 bg-[rgba(15,23,42,0.5)] backdrop-blur-[2px] md:hidden"
         />
       ) : null}
 
@@ -186,79 +201,85 @@ export function Sidebar({
         // Gaveta fechada sai do caminho do teclado: sem isto, Tab passeia por
         // um menu invisível fora da tela.
         inert={ehCelular && !gaveta.aberta}
-        className={`fixed inset-y-0 left-0 z-50 flex w-[260px] max-w-[82vw] flex-col bg-[var(--marca-azul)] text-white transition-[width,transform] duration-200 ease-out md:sticky md:top-0 md:h-screen md:w-[var(--largura-menu)] md:max-w-none md:translate-x-0 ${
-          gaveta.aberta ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 flex w-[272px] max-w-[85vw] flex-col border-r border-[var(--borda)] bg-white text-[var(--tinta-forte)] transition-[width,transform] duration-200 ease-out md:sticky md:top-0 md:h-screen md:w-[var(--largura-menu)] md:max-w-none md:translate-x-0 ${
+          gaveta.aberta
+            ? "translate-x-0 shadow-[var(--sombra-xl)]"
+            : "-translate-x-full"
         }`}
         style={{ "--largura-menu": `${largura}px` } as React.CSSProperties}
       >
-        <button
-          type="button"
-          onClick={() => fechaGaveta(true)}
-          aria-label="Fechar menu"
-          className="absolute right-2 top-3.5 rounded-md p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white md:hidden"
-        >
-          <Icone nome="fechar" />
-        </button>
-
-        <Link
-          href="/obras"
-          title="Todas as obras"
-          className="flex h-14 shrink-0 items-center gap-2.5 px-3 transition hover:bg-white/5"
-        >
-          <span
-            aria-hidden
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-[var(--marca-terracotta)] text-sm font-bold"
+        <div className="flex h-16 shrink-0 items-center gap-3 border-b border-[var(--grade)] px-4">
+          <Link
+            href="/obras"
+            title="Todas as obras"
+            className={`flex min-w-0 flex-1 items-center gap-3 ${colapsada ? "md:justify-center" : ""}`}
           >
-            6
-          </span>
-          <span
-            className={`truncate text-sm leading-tight font-semibold ${colapsada ? "md:hidden" : ""}`}
-          >
-            Restrições
-            <span className="block text-[11px] font-normal text-white/55">
-              6WLA
+            <span className={soLargo}>
+              <Logo />
             </span>
-          </span>
-        </Link>
-
-        {/* Dentro de uma obra, o nome dela encabeça o menu. */}
-        {obra ? (
-          <div className="shrink-0 border-y border-white/10 bg-black/15 px-3 py-2">
             {colapsada ? (
-              <div
-                title={obra.nome}
-                className="hidden h-7 place-items-center rounded bg-white/10 text-[11px] font-bold md:grid"
-              >
-                {obra.codigo.slice(0, 4)}
+              <span
+                aria-hidden
+                className="hidden h-6 w-1 rounded-sm bg-[var(--marca-terracotta)] md:block"
+              />
+            ) : null}
+          </Link>
+          <button
+            type="button"
+            onClick={() => fechaGaveta(true)}
+            aria-label="Fechar menu"
+            className="grid h-8 w-8 place-items-center rounded-lg text-[var(--tinta-fraca)] transition hover:bg-[var(--marca-gelo)] hover:text-[var(--tinta-forte)] md:hidden"
+          >
+            <Icone nome="fechar" />
+          </button>
+        </div>
+
+        {/* Contexto: workspace e, dentro de uma obra, a obra. */}
+        {workspace || obra ? (
+          <div
+            className={`shrink-0 space-y-2 border-b border-[var(--grade)] px-3 py-3 ${soLargo}`}
+          >
+            {workspace}
+            {obra ? (
+              <div className="rounded-lg bg-[var(--plano)] px-3 py-2">
+                <div
+                  className="truncate text-sm font-semibold text-[var(--tinta-forte)]"
+                  title={obra.nome}
+                >
+                  {obra.nome}
+                </div>
+                <Link
+                  href="/obras"
+                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-[var(--tinta-fraca)] transition hover:text-[var(--marca-terracotta)]"
+                >
+                  <Icone nome="voltar" tamanho={13} />
+                  Todas as obras
+                </Link>
               </div>
             ) : null}
-            <div className={colapsada ? "md:hidden" : ""}>
-              <div className="truncate text-sm font-semibold" title={obra.nome}>
-                {obra.nome}
-              </div>
-              <Link
-                href="/obras"
-                className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-white/55 transition hover:text-white"
-              >
-                <Icone nome="voltar" />
-                Todas as obras
-              </Link>
-            </div>
+          </div>
+        ) : null}
+        {obra && colapsada ? (
+          <div
+            title={obra.nome}
+            className="mx-2 mt-3 hidden h-8 place-items-center rounded-lg bg-[var(--plano)] text-[11px] font-bold text-[var(--tinta-media)] md:grid"
+          >
+            {obra.codigo.slice(0, 4)}
           </div>
         ) : null}
 
-        <nav className="rolagem-fina flex-1 overflow-y-auto px-2 py-2">
+        <nav className="rolagem-fina flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-3">
           {grupos.map((grupo, i) => (
-            <div key={grupo.titulo ?? i} className={i > 0 ? "mt-4" : ""}>
+            <div key={grupo.titulo ?? i} className={i > 0 ? "mt-3" : ""}>
               {grupo.titulo ? (
                 <h2
-                  className={`px-2 pb-1 text-[11px] font-medium text-white/40 ${colapsada ? "md:hidden" : ""}`}
+                  className={`px-3 pt-1.5 pb-1 text-[0.625rem] font-semibold tracking-[0.05em] whitespace-nowrap text-[var(--tinta-apagada)] uppercase ${soLargo}`}
                 >
                   {grupo.titulo}
                 </h2>
               ) : null}
-              {grupo.titulo && colapsada ? (
-                <div className="mx-2 mb-2 hidden border-t border-white/15 md:block" />
+              {grupo.titulo && colapsada && i > 0 ? (
+                <div className="mx-3 mb-2 hidden border-t border-[var(--grade)] md:block" />
               ) : null}
               <ul className="space-y-0.5">
                 {grupo.itens.map((item) => {
@@ -272,16 +293,14 @@ export function Sidebar({
                         href={item.href}
                         title={colapsada ? item.rotulo : undefined}
                         aria-current={ativo ? "page" : undefined}
-                        className={`flex items-center gap-2.5 rounded-md px-2 py-2.5 text-sm transition md:py-2 ${
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm whitespace-nowrap transition md:py-2 ${
                           ativo
-                            ? "bg-[var(--marca-terracotta)] font-semibold text-white"
-                            : "text-white/75 hover:bg-white/10 hover:text-white"
-                        } ${colapsada ? "md:justify-center" : ""}`}
+                            ? "bg-[var(--marca-brand-50)] font-semibold text-[var(--marca-terracotta-escuro)]"
+                            : "font-medium text-[var(--tinta-media)] hover:bg-[var(--plano)] hover:text-[var(--tinta-forte)]"
+                        } ${colapsada ? "md:justify-center md:px-0" : ""}`}
                       >
                         <Icone nome={item.icone} />
-                        <span
-                          className={`truncate ${colapsada ? "md:hidden" : ""}`}
-                        >
+                        <span className={`truncate ${soLargo}`}>
                           {item.rotulo}
                         </span>
                       </Link>
@@ -293,30 +312,46 @@ export function Sidebar({
           ))}
         </nav>
 
-        <div className="shrink-0 border-t border-white/15 px-2 py-2">
+        <div className="hidden shrink-0 border-t border-[var(--grade)] p-2 md:block">
+          <button
+            type="button"
+            onClick={alterna}
+            aria-label={colapsada ? "Expandir menu" : "Recolher menu"}
+            aria-expanded={!colapsada}
+            title={colapsada ? "Expandir menu" : "Recolher menu"}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[0.78rem] font-medium whitespace-nowrap text-[var(--tinta-fraca)] transition hover:bg-[var(--marca-gelo)] hover:text-[var(--tinta-forte)] ${colapsada ? "justify-center" : ""}`}
+          >
+            <span
+              aria-hidden
+              className={`transition-transform duration-200 ${colapsada ? "rotate-180" : ""}`}
+            >
+              <Icone nome="recolher" />
+            </span>
+            {!colapsada ? <span>Recolher</span> : null}
+          </button>
+        </div>
+
+        <div className="shrink-0 border-t border-[var(--grade)]">
           <ContextoMenu.Provider value={colapsada}>
             {rodape}
           </ContextoMenu.Provider>
         </div>
-
-        <button
-          type="button"
-          onClick={alterna}
-          aria-label={colapsada ? "Expandir menu" : "Minimizar menu"}
-          aria-expanded={!colapsada}
-          title={colapsada ? "Expandir menu" : "Minimizar menu"}
-          className="hidden h-9 shrink-0 items-center gap-2 border-t border-white/15 px-3 text-xs text-white/55 transition hover:bg-white/10 hover:text-white md:flex"
-        >
-          <span
-            aria-hidden
-            className={`transition-transform duration-200 ${colapsada ? "rotate-180" : ""}`}
-          >
-            <Icone nome="recolher" />
-          </span>
-          {!colapsada ? <span>Minimizar</span> : null}
-        </button>
       </aside>
     </>
+  );
+}
+
+/** Logo da PHD (já vem em terracota; sem o filtro de cor que o PHD usa). */
+function Logo() {
+  return (
+    <Image
+      src="/logo-phd.png"
+      alt="PHD Engenharia · Restrições"
+      width={1586}
+      height={226}
+      priority
+      className="h-auto w-[148px] max-w-none"
+    />
   );
 }
 
@@ -324,20 +359,17 @@ export function ItemRodape({
   children,
   titulo,
   href,
-  destaque,
 }: {
   children: ReactNode;
   titulo?: string;
   href: string;
-  destaque?: boolean;
 }) {
+  const colapsada = useMenuColapsado();
   return (
     <Link
       href={href}
       title={titulo}
-      className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm transition ${
-        destaque ? "text-white" : "text-white/70"
-      } hover:bg-white/10 hover:text-white`}
+      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap text-[var(--tinta-media)] transition hover:bg-[var(--plano)] hover:text-[var(--tinta-forte)] ${colapsada ? "md:justify-center md:px-0" : ""}`}
     >
       {children}
     </Link>
@@ -364,12 +396,18 @@ const ICONES = {
   importar: "M12 3v12M8 11l4 4 4-4M4 21h16",
 } as const;
 
-export function Icone({ nome }: { nome: keyof typeof ICONES }) {
+export function Icone({
+  nome,
+  tamanho = 18,
+}: {
+  nome: keyof typeof ICONES;
+  tamanho?: number;
+}) {
   return (
     <svg
       aria-hidden
-      width="17"
-      height="17"
+      width={tamanho}
+      height={tamanho}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

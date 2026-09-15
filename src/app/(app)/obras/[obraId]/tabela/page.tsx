@@ -49,7 +49,7 @@ export default async function PaginaTabela({
           papel === "gestor" ? (
             <Link
               href={`/obras/${obraId}/importar`}
-              className="rounded-md border border-[var(--borda)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--tinta-media)] transition hover:border-[var(--marca-terracotta)] hover:text-[var(--marca-terracotta)]"
+              className="rounded-lg border border-[var(--borda)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--tinta-media)] transition hover:border-[var(--marca-terracotta)] hover:text-[var(--marca-terracotta)]"
             >
               Importar planilha
             </Link>

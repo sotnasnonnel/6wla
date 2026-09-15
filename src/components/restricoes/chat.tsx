@@ -168,7 +168,7 @@ export function ChatRestricao({
               className={`flex ${meu ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm shadow-sm ${meu ? "bg-[#eaf0f6]" : "bg-white border border-[var(--borda)]"}`}
+                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm shadow-sm ${meu ? "bg-[#eff6ff]" : "bg-white border border-[var(--borda)]"}`}
               >
                 <div className="mb-0.5 flex items-baseline gap-2 text-xs text-[var(--tinta-fraca)]">
                   <span className="font-semibold text-[var(--tinta-media)]">
@@ -188,7 +188,7 @@ export function ChatRestricao({
 
       <div className="relative border-t border-[var(--borda)] bg-white p-3">
         {sugestoes && candidatas.length > 0 ? (
-          <ul className="absolute bottom-full left-3 z-20 mb-1 w-64 rounded-md border border-[var(--borda)] bg-white py-1 shadow-lg">
+          <ul className="absolute bottom-full left-3 z-20 mb-1 w-64 rounded-lg border border-[var(--borda)] bg-white py-1 shadow-lg">
             {candidatas.map((m, i) => (
               <li key={m.id}>
                 <button
@@ -220,7 +220,7 @@ export function ChatRestricao({
             aoDigitar(ev.target.value, ev.target.selectionStart)
           }
           onKeyDown={teclas}
-          className="w-full resize-none rounded-md border border-[var(--borda)] px-2.5 py-2 text-sm focus:border-[var(--marca-terracotta)] focus:outline-none"
+          className="w-full resize-none rounded-lg border border-[var(--borda)] px-2.5 py-2 text-sm focus:border-[var(--marca-terracotta)] focus:outline-none"
         />
         {erro ? (
           <div className="mt-2">

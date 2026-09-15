@@ -10,8 +10,8 @@ export default async function PaginaLogin({
   const { proximo, erro } = await searchParams;
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--marca-gelo)] px-4">
-      <div className="w-full max-w-sm rounded-lg border border-[var(--borda)] bg-white p-6 shadow-sm">
-        <h1 className="text-lg font-semibold text-[var(--tinta-forte)]">
+      <div className="w-full max-w-sm rounded-2xl border border-[var(--borda)] bg-white p-7 shadow-[var(--sombra-md)]">
+        <h1 className="text-xl font-bold tracking-[-0.02em] text-[var(--tinta-forte)]">
           Controle de Restrições
         </h1>
         <p className="mb-5 text-sm text-[var(--tinta-fraca)]">

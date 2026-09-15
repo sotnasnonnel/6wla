@@ -44,7 +44,7 @@ export default async function PaginaIndicadoresObra({
                   ? `/obras/${obraId}/tabela`
                   : `/obras/${obraId}/importar`
               }
-              className="rounded-md bg-[var(--marca-terracotta)] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[var(--marca-terracotta-escuro)]"
+              className="rounded-lg bg-[var(--marca-terracotta)] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[var(--marca-terracotta-escuro)]"
             >
               {papel === "membro" ? "Ir para a tabela" : "Importar planilha"}
             </Link>
