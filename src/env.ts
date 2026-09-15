@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Todas as variáveis de ambiente passam por aqui. Nenhum `process.env.X` solto
@@ -9,7 +9,8 @@ import { z } from 'zod';
 const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  NEXT_PUBLIC_SITE_URL: z.url(),
+  // Ainda sem domínio publicado: por enquanto o app só roda em `npm run dev`.
+  NEXT_PUBLIC_SITE_URL: z.url().default("http://localhost:3000"),
 });
 
 const serverSchema = z.object({
@@ -20,7 +21,7 @@ const serverSchema = z.object({
   // Gemini: sugestão de mapeamento de colunas na importação. Opcional —
   // sem a chave, vale só a detecção por apelidos.
   GEMINI_API_KEY: z.string().min(1).optional(),
-  GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
+  GEMINI_MODEL: z.string().min(1).default("gemini-3.5-flash"),
 });
 
 /**
@@ -35,7 +36,7 @@ const publicEnv = publicSchema.safeParse({
 
 if (!publicEnv.success) {
   throw new Error(
-    `Variáveis de ambiente públicas inválidas:\n${z.prettifyError(publicEnv.error)}`
+    `Variáveis de ambiente públicas inválidas:\n${z.prettifyError(publicEnv.error)}`,
   );
 }
 
@@ -46,8 +47,10 @@ export const env = publicEnv.data;
  * devolver undefined e vazar uma chave vazia para o cliente Supabase.
  */
 export function serverEnv() {
-  if (typeof window !== 'undefined') {
-    throw new Error('serverEnv() foi chamado no browser. Isso vazaria segredos.');
+  if (typeof window !== "undefined") {
+    throw new Error(
+      "serverEnv() foi chamado no browser. Isso vazaria segredos.",
+    );
   }
 
   const parsed = serverSchema.safeParse({
@@ -59,7 +62,7 @@ export function serverEnv() {
 
   if (!parsed.success) {
     throw new Error(
-      `Variáveis de ambiente de servidor inválidas:\n${z.prettifyError(parsed.error)}`
+      `Variáveis de ambiente de servidor inválidas:\n${z.prettifyError(parsed.error)}`,
     );
   }
 
