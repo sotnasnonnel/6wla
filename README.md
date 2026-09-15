@@ -80,6 +80,30 @@ salva.
 - **Pessoas** (admin do workspace): quem participa e com que papel.
 - **Workspaces / Usuários** (admin global): cria workspaces e administra contas.
 
+## PPC · Check-in / Check-out
+
+Dentro da obra, a sidebar separa os grupos **6WLA** e **PPC**. Em PPC,
+**Check-in / Check-out** reúne a programação semanal e seus apontamentos.
+
+- Importe um `.xlsx` escolhendo a aba **PPC** ou **Programação**
+  (`Programacao` também é reconhecida), com até 15 MB e 5.000 atividades.
+- Confira o mapeamento e a amostra antes de confirmar. São reconhecidos ID,
+  nome da atividade, semana, quantidade prevista, quantidade realizada,
+  Status Planejamento, Observações, 6M+S, líder imediato, encarregado,
+  responsável, disciplina, início e término da semana.
+- ID, nome, semana, quantidade prevista e as duas datas são obrigatórios.
+  Quantidade realizada vazia significa não informada; zero é um apontamento.
+  Fórmulas devem estar calculadas e salvas no Excel antes do envio.
+- A combinação obra + ID + semana + início identifica uma atividade.
+  Reimportar preserva registros existentes. Erros bloqueiam toda a importação.
+- Gestores e administradores importam e editam. Membros consultam, com filtros
+  por semana, disciplina e busca por atividade ou pessoa. Os dados ficam
+  isolados por workspace pelas políticas do banco.
+
+Teste local de ponta a ponta (app e Supabase iniciados, Microsoft Edge instalado):
+`node --env-file=.env.local node_modules/@playwright/test/cli.js test --config playwright.ppc.config.ts`.
+O teste cria e remove apenas seus próprios registros temporários.
+
 ## Indicadores
 
 A peça central é a **situação**, sempre calculada e nunca digitada:

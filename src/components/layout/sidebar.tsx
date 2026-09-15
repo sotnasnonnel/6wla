@@ -126,6 +126,7 @@ export function Sidebar({
   const grupos: GrupoMenu[] = obra
     ? [
         {
+          titulo: "6WLA",
           itens: [
             {
               href: `/obras/${obra.id}/indicadores`,
@@ -147,6 +148,22 @@ export function Sidebar({
                   },
                 ]
               : []),
+          ],
+        },
+        {
+          titulo: "PPC",
+          itens: [
+            {
+              href: `/obras/${obra.id}/check-in-check-out`,
+              rotulo: "Check-in / Check-out",
+              icone: "tabela",
+              prefixo: true,
+            },
+            {
+              href: `/obras/${obra.id}/tabela-importacao`,
+              rotulo: "Tabela de importação",
+              icone: "importar",
+            },
           ],
         },
       ]

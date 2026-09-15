@@ -24,9 +24,6 @@ export function ehXlsx(bytes: Uint8Array): boolean {
   return ASSINATURA_ZIP.every((b, i) => bytes[i] === b);
 }
 
-const ARQUIVOS_NECESSARIOS =
-  /^xl\/(workbook\.xml|_rels\/workbook\.xml\.rels|sharedStrings\.xml|styles\.xml|worksheets\/sheet\d+\.xml)$/;
-
 /**
  * Lê a aba pedida (ou a primeira com dados). `limiteLinhas` aborta cedo em
  * planilhas gigantes, antes de materializar tudo.
@@ -35,12 +32,28 @@ export function leXlsx(
   bytes: Uint8Array,
   abaPreferida?: string,
   limiteLinhas = 5000,
+  preservarErros = false,
 ): PlanilhaXlsx {
   if (!ehXlsx(bytes)) throw new Error("O arquivo não é um .xlsx válido.");
 
-  const arquivos = unzipSync(bytes, {
-    filter: (f) => ARQUIVOS_NECESSARIOS.test(f.name),
-  });
+  // O .xlsx completo pode conter centenas de MB em abas não selecionadas.
+  // Primeiro lemos os nomes; só então descompactamos a aba pedida. O limite
+  // protege a memória sem contar imagens, anexos e outras planilhas.
+  let tamanhoLido = 0;
+  const extrai = (nomes: string[]) =>
+    unzipSync(bytes, {
+      filter: (arquivo) => {
+        if (!nomes.includes(arquivo.name)) return false;
+        tamanhoLido += arquivo.originalSize;
+        if (tamanhoLido > 128 * 1024 * 1024) {
+          throw new Error(
+            "Os dados da aba selecionada e suas referências excedem 128 MB. Reduza os dados dessa aba para importar.",
+          );
+        }
+        return true;
+      },
+    });
+  const arquivos = extrai(["xl/workbook.xml", "xl/_rels/workbook.xml.rels"]);
   const texto = (nome: string): string | null => {
     const bin = arquivos[nome];
     return bin ? strFromU8(bin) : null;
@@ -52,9 +65,6 @@ export function leXlsx(
 
   const abas = listaAbas(workbook, rels);
   if (abas.length === 0) throw new Error("A planilha não tem abas.");
-
-  const compartilhadas = leSharedStrings(texto("xl/sharedStrings.xml") ?? "");
-  const estiloEhData = leEstilosData(texto("xl/styles.xml") ?? "");
 
   const candidatas = abaPreferida
     ? abas.filter(
@@ -68,10 +78,22 @@ export function leXlsx(
     );
   }
 
+  Object.assign(arquivos, extrai(["xl/sharedStrings.xml", "xl/styles.xml"]));
+  const compartilhadas = leSharedStrings(texto("xl/sharedStrings.xml") ?? "");
+  const estiloEhData = leEstilosData(texto("xl/styles.xml") ?? "");
+
   for (const aba of candidatas) {
-    const xml = texto(`xl/${aba.caminho}`);
-    if (!xml) continue;
-    const matriz = leCelulas(xml, compartilhadas, estiloEhData, limiteLinhas);
+    const caminho = `xl/${aba.caminho}`;
+    const bin = extrai([caminho])[caminho];
+    if (!bin) continue;
+    const xml = strFromU8(bin);
+    const matriz = leCelulas(
+      xml,
+      compartilhadas,
+      estiloEhData,
+      limiteLinhas,
+      preservarErros,
+    );
     if (matriz.length > 1 || abaPreferida) {
       return { aba: aba.nome, abas: abas.map((a) => a.nome), matriz };
     }
@@ -156,6 +178,7 @@ function leCelulas(
   compartilhadas: string[],
   estiloEhData: boolean[],
   limiteLinhas: number,
+  preservarErros: boolean,
 ): unknown[][] {
   const matriz: unknown[][] = [];
   let linhasVistas = 0;
@@ -180,8 +203,28 @@ function leCelulas(
       }
     }
 
-    const valor = valorCelula(attrs, corpo, compartilhadas, estiloEhData);
+    const valor = valorCelula(
+      attrs,
+      corpo,
+      compartilhadas,
+      estiloEhData,
+      preservarErros,
+    );
     if (valor === null) continue;
+    // Uma célula isolada pode apontar para um índice enorme. Verificar antes
+    // de expandir os arrays, não apenas contar as linhas presentes no XML.
+    if (
+      !Number.isSafeInteger(linha) ||
+      linha < 0 ||
+      linha >= Math.max(10000, limiteLinhas * 2) ||
+      !Number.isSafeInteger(coluna) ||
+      coluna < 0 ||
+      coluna >= 512
+    ) {
+      throw new Error(
+        "Referência de célula fora dos limites da importação (linhas ou colunas muito distantes).",
+      );
+    }
     (matriz[linha] ??= [])[coluna] = valor;
   }
   for (let i = 0; i < matriz.length; i++) matriz[i] ??= [];
@@ -193,6 +236,7 @@ function valorCelula(
   corpo: string,
   compartilhadas: string[],
   estiloEhData: boolean[],
+  preservarErros: boolean,
 ): unknown {
   const tipo = atributo(attrs, "t");
   if (tipo === "inlineStr") {
@@ -211,7 +255,7 @@ function valorCelula(
     case "b":
       return v === "1" ? "True" : "False";
     case "e":
-      return null;
+      return preservarErros ? decodeXml(v) : null;
     default: {
       const n = Number(v);
       if (!Number.isFinite(n)) return decodeXml(v);
