@@ -59,7 +59,7 @@ export function ChatRestricao({
         {
           event: "INSERT",
           schema: "public",
-          table: "restricao_comentarios",
+          table: "6wla_restricao_comentarios",
           filter: `restricao_id=eq.${restricaoId}`,
         },
         () => router.refresh(),

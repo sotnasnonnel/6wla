@@ -23,7 +23,7 @@ export function Sino({ userId, inicial }: { userId: string; inicial: number }) {
     const supabase = createClient();
     const recontar = async () => {
       const { count } = await supabase
-        .from("notificacoes")
+        .from("6wla_notificacoes")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .is("lida_em", null);
@@ -36,7 +36,7 @@ export function Sino({ userId, inicial }: { userId: string; inicial: number }) {
         {
           event: "*",
           schema: "public",
-          table: "notificacoes",
+          table: "6wla_notificacoes",
           filter: `user_id=eq.${userId}`,
         },
         () => void recontar(),

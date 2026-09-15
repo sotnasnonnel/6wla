@@ -59,7 +59,7 @@ export async function criaWorkspace(
 
   const { supabase } = await exigeAdmin();
   const { data, error } = await supabase
-    .from("workspaces")
+    .from("6wla_workspaces")
     .insert({ codigo: parsed.data.codigo, nome: parsed.data.nome })
     .select("id")
     .single();
@@ -72,7 +72,7 @@ export async function criaWorkspace(
   if (parsed.data.adminEmail) {
     const admin = createAdminClient();
     const { data: pessoa } = await admin
-      .from("perfis")
+      .from("6wla_perfis")
       .select("id")
       .eq("email", parsed.data.adminEmail)
       .maybeSingle();
@@ -82,7 +82,7 @@ export async function criaWorkspace(
       );
     }
     await supabase
-      .from("membros_workspace")
+      .from("6wla_membros_workspace")
       .insert({ workspace_id: data.id, user_id: pessoa.id, papel: "admin" });
   }
   revalidatePath("/admin/workspaces");
@@ -111,7 +111,7 @@ export async function alteraPapel(form: FormData): Promise<Resultado> {
     return falha("Você não pode rebaixar a si mesmo");
   }
   const { error } = await supabase
-    .from("membros_workspace")
+    .from("6wla_membros_workspace")
     .update({ papel: parsed.data.papel })
     .eq("workspace_id", parsed.data.workspaceId)
     .eq("user_id", parsed.data.userId);
@@ -131,7 +131,7 @@ export async function removeMembro(form: FormData): Promise<Resultado> {
     return falha("Você não pode se remover do workspace");
   }
   const { error } = await supabase
-    .from("membros_workspace")
+    .from("6wla_membros_workspace")
     .delete()
     .eq("workspace_id", parsed.data.workspaceId)
     .eq("user_id", parsed.data.userId);
@@ -163,7 +163,7 @@ export async function adicionaPorEmail(form: FormData): Promise<Resultado> {
 
   const admin = createAdminClient();
   const { data: pessoa } = await admin
-    .from("perfis")
+    .from("6wla_perfis")
     .select("id, ativo")
     .eq("email", parsed.data.email)
     .maybeSingle();
@@ -174,7 +174,7 @@ export async function adicionaPorEmail(form: FormData): Promise<Resultado> {
   }
 
   const { error } = await supabase
-    .from("membros_workspace")
+    .from("6wla_membros_workspace")
     .upsert({
       workspace_id: parsed.data.workspaceId,
       user_id: pessoa.id,

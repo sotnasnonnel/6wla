@@ -15,7 +15,7 @@ export async function marcaLida(notificacaoId: string): Promise<Resultado> {
   if (!id.success) return falha("Identificador inválido");
   const { supabase, perfil } = await exigeUsuario();
   const { error } = await supabase
-    .from("notificacoes")
+    .from("6wla_notificacoes")
     .update({ lida_em: new Date().toISOString() })
     .eq("id", id.data)
     .eq("user_id", perfil.id);
@@ -27,7 +27,7 @@ export async function marcaLida(notificacaoId: string): Promise<Resultado> {
 export async function marcaTodasLidas(): Promise<Resultado> {
   const { supabase, perfil } = await exigeUsuario();
   const { error } = await supabase
-    .from("notificacoes")
+    .from("6wla_notificacoes")
     .update({ lida_em: new Date().toISOString() })
     .eq("user_id", perfil.id)
     .is("lida_em", null);

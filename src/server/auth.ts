@@ -5,11 +5,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums, Tables } from "@/lib/database.types";
 
-export type Perfil = Tables<"perfis">;
+export type Perfil = Tables<"6wla_perfis">;
 export type Cliente = Awaited<ReturnType<typeof createClient>>;
-export type PapelWorkspace = Enums<"workspace_papel">;
+export type PapelWorkspace = Enums<"6wla_workspace_papel">;
 export type Workspace = Pick<
-  Tables<"workspaces">,
+  Tables<"6wla_workspaces">,
   "id" | "codigo" | "nome" | "ativo"
 >;
 
@@ -28,7 +28,7 @@ export async function exigeUsuario(): Promise<{
   if (!user) redirect("/login");
 
   const { data: perfil } = await supabase
-    .from("perfis")
+    .from("6wla_perfis")
     .select("*")
     .eq("id", user.id)
     .single();
@@ -55,9 +55,9 @@ export async function workspacesDoUsuario(
   perfil: Perfil,
 ): Promise<Array<Workspace & { papel: PapelWorkspace }>> {
   const [{ data: workspaces }, { data: membros }] = await Promise.all([
-    supabase.from("workspaces").select("id, codigo, nome, ativo").order("nome"),
+    supabase.from("6wla_workspaces").select("id, codigo, nome, ativo").order("nome"),
     supabase
-      .from("membros_workspace")
+      .from("6wla_membros_workspace")
       .select("workspace_id, papel")
       .eq("user_id", perfil.id),
   ]);
@@ -83,7 +83,7 @@ export async function papelNoWorkspace(
 ): Promise<PapelWorkspace | null> {
   if (perfil.admin) return "admin";
   const { data } = await supabase
-    .from("membros_workspace")
+    .from("6wla_membros_workspace")
     .select("papel")
     .eq("workspace_id", workspaceId)
     .eq("user_id", perfil.id)
@@ -135,7 +135,7 @@ export async function exigeAdminWs(workspaceId: string) {
 /** Obra + workspace dela. `null` se não existe ou a RLS não deixa ver. */
 export async function buscaObraComWorkspace(supabase: Cliente, obraId: string) {
   const { data } = await supabase
-    .from("obras")
+    .from("6wla_obras")
     .select("id, workspace_id, codigo, nome, ativa")
     .eq("id", obraId)
     .maybeSingle();

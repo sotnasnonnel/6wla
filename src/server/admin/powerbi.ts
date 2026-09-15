@@ -26,9 +26,9 @@ export function tokenValido(authorization: string | null): boolean {
 export async function extratoRestricoes(obraCodigo?: string, workspaceCodigo?: string) {
   const admin = createAdminClient();
   let consulta = admin
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select(
-      "*, obra:obras!inner(codigo, nome, workspace:workspaces!inner(codigo, nome)), responsavel:perfis!restricoes_responsavel_id_fkey(nome, email)",
+      "*, obra:6wla_obras!inner(codigo, nome, workspace:6wla_workspaces!inner(codigo, nome)), responsavel:6wla_perfis!6wla_restricoes_responsavel_id_fkey(nome, email)",
     )
     .order("obra_id")
     .order("numero");

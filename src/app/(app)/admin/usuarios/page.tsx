@@ -7,9 +7,9 @@ export const dynamic = "force-dynamic";
 export default async function PaginaUsuarios() {
   const { supabase, perfil } = await exigeAdmin();
   const { data: usuarios } = await supabase
-    .from("perfis")
+    .from("6wla_perfis")
     .select(
-      "id, nome, email, admin, ativo, criado_em, membros:membros_workspace(workspace:workspaces(codigo))",
+      "id, nome, email, admin, ativo, criado_em, membros:6wla_membros_workspace(workspace:6wla_workspaces(codigo))",
     )
     .order("nome");
 

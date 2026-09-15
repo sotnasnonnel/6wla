@@ -21,7 +21,7 @@ export async function comenta(
 
   const { supabase, perfil } = await exigeUsuario();
   const { data: r } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select("obra_id")
     .eq("id", restricaoId)
     .maybeSingle();
@@ -30,7 +30,7 @@ export async function comenta(
 
   // Só membro do workspace pode ser mencionado (o gatilho também filtra).
   const { data: membros } = await supabase
-    .from("membros_workspace")
+    .from("6wla_membros_workspace")
     .select("user_id")
     .eq("workspace_id", obra.workspace_id);
   const permitidos = new Set((membros ?? []).map((m) => m.user_id));
@@ -39,7 +39,7 @@ export async function comenta(
   );
 
   const { data, error } = await supabase
-    .from("restricao_comentarios")
+    .from("6wla_restricao_comentarios")
     .insert({
       restricao_id: restricaoId,
       autor_id: perfil.id,

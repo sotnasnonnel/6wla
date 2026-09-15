@@ -7,7 +7,7 @@ export async function contaNaoLidas(
   userId: string,
 ): Promise<number> {
   const { count } = await supabase
-    .from("notificacoes")
+    .from("6wla_notificacoes")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .is("lida_em", null);
@@ -16,9 +16,9 @@ export async function contaNaoLidas(
 
 export async function listaNotificacoes(supabase: Cliente, userId: string) {
   const { data, error } = await supabase
-    .from("notificacoes")
+    .from("6wla_notificacoes")
     .select(
-      "id, tipo, lida_em, criado_em, restricao:restricoes!inner(id, numero, descricao, obra_id), autor:perfis!notificacoes_autor_id_fkey(nome), comentario:restricao_comentarios(texto)",
+      "id, tipo, lida_em, criado_em, restricao:6wla_restricoes!inner(id, numero, descricao, obra_id), autor:6wla_perfis!6wla_notificacoes_autor_id_fkey(nome), comentario:6wla_restricao_comentarios(texto)",
     )
     .eq("user_id", userId)
     .order("criado_em", { ascending: false })

@@ -14,9 +14,9 @@ export async function linhasDaObra(
   obraId: string,
 ): Promise<LinhaPainel[]> {
   const { data, error } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select(
-      "id, obra_id, numero, descricao, acao, status, data_criacao, data_limite, previsao_conclusao, data_conclusao, responsavel_nome, responsavel_id, area, setor, causa_6m, classificacao, atividade_impactada, responsavel:perfis!restricoes_responsavel_id_fkey(nome)",
+      "id, obra_id, numero, descricao, acao, status, data_criacao, data_limite, previsao_conclusao, data_conclusao, responsavel_nome, responsavel_id, area, setor, causa_6m, classificacao, atividade_impactada, responsavel:6wla_perfis!6wla_restricoes_responsavel_id_fkey(nome)",
     )
     .eq("obra_id", obraId)
     .order("numero");

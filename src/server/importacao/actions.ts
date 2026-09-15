@@ -78,7 +78,7 @@ export async function iniciaImportacao(
   }
 
   const { data, error } = await supabase
-    .from("importacoes")
+    .from("6wla_importacoes")
     .insert({
       obra_id: parsed.data.obraId,
       criado_por: perfil.id,
@@ -117,7 +117,7 @@ export async function resugereComIA(
   if ("erro" in ia) return falha(ia.erro);
   const mapa = { ...sugereMapa(imp.cabecalhos), ...ia.mapa };
   await supabase
-    .from("importacoes")
+    .from("6wla_importacoes")
     .update({ mapa_colunas: mapa as Json, mapa_origem: "ia" })
     .eq("id", id.data);
   revalidatePath(`/obras/${imp.obra_id}/importar/${id.data}`);
@@ -133,7 +133,7 @@ export async function resugereComIA(
 function camposDaLinha(
   r: RestricaoImportada,
   responsavelId: string | null,
-): TablesUpdate<"restricoes"> {
+): TablesUpdate<"6wla_restricoes"> {
   return {
     codigo: r.codigo,
     descricao: r.descricao,
@@ -164,8 +164,8 @@ function camposDaLinha(
 
 /** Tira os campos vazios: o que a planilha não trouxe fica como está. */
 function soPreenchidos(
-  dados: TablesUpdate<"restricoes">,
-): TablesUpdate<"restricoes"> {
+  dados: TablesUpdate<"6wla_restricoes">,
+): TablesUpdate<"6wla_restricoes"> {
   const limpo: Record<string, unknown> = {};
   for (const [campo, valor] of Object.entries(dados)) {
     if (valor === null || valor === undefined) continue;
@@ -174,7 +174,7 @@ function soPreenchidos(
       continue;
     limpo[campo] = valor;
   }
-  return limpo as TablesUpdate<"restricoes">;
+  return limpo as TablesUpdate<"6wla_restricoes">;
 }
 
 /** Etapa 2: gestor confirma o de-para e as linhas viram restrições. */
@@ -224,7 +224,7 @@ export async function confirmaImportacao(
   const porEmail = new Map<string, string>();
   if (emails.length > 0) {
     const { data: perfis } = await supabase
-      .from("perfis")
+      .from("6wla_perfis")
       .select("id, email")
       .in("email", emails);
     for (const p of perfis ?? []) porEmail.set(p.email.toLowerCase(), p.id);
@@ -235,8 +235,8 @@ export async function confirmaImportacao(
   const existentes = await codigosDaObra(supabase, imp.obra_id);
   const novosCodigos = new Set<string>();
 
-  const novas: TablesInsert<"restricoes">[] = [];
-  const alteracoes: Array<{ id: string; dados: TablesUpdate<"restricoes"> }> =
+  const novas: TablesInsert<"6wla_restricoes">[] = [];
+  const alteracoes: Array<{ id: string; dados: TablesUpdate<"6wla_restricoes"> }> =
     [];
   let ignoradas = 0;
 
@@ -285,7 +285,7 @@ export async function confirmaImportacao(
     erro?: string,
   ): Promise<EstadoImportacao> => {
     await supabase
-      .from("importacoes")
+      .from("6wla_importacoes")
       .update({
         ...(erro
           ? {}
@@ -309,7 +309,7 @@ export async function confirmaImportacao(
   let importadas = 0;
   for (let i = 0; i < novas.length; i += 200) {
     const lote = novas.slice(i, i + 200);
-    const { error } = await supabase.from("restricoes").insert(lote);
+    const { error } = await supabase.from("6wla_restricoes").insert(lote);
     if (error) {
       console.error("[importacao.confirma.insert]", error);
       return encerra(
@@ -331,7 +331,7 @@ export async function confirmaImportacao(
     const lote = alteracoes.slice(i, i + 25);
     const resultados = await Promise.all(
       lote.map((a) =>
-        supabase.from("restricoes").update(a.dados).eq("id", a.id),
+        supabase.from("6wla_restricoes").update(a.dados).eq("id", a.id),
       ),
     );
     const falhou = resultados.find((r) => r.error);
@@ -365,7 +365,7 @@ export async function cancelaImportacao(
   if (!imp) return falha("Importação não encontrada");
   await exigeGestor(imp.obra_id);
   await supabase
-    .from("importacoes")
+    .from("6wla_importacoes")
     .update({ status: "cancelada", linhas: [] })
     .eq("id", id.data)
     .eq("status", "rascunho");

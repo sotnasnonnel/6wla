@@ -6,7 +6,7 @@
  */
 
 /** Bucket privado do Storage. O mesmo nome está na migration. */
-export const BUCKET_ANEXOS = "anexos";
+export const BUCKET_ANEXOS = "6wla-anexos";
 
 /** 10 MB — o mesmo `file_size_limit` declarado no bucket. */
 export const TAMANHO_MAXIMO_ANEXO = 10 * 1024 * 1024;

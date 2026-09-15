@@ -7,7 +7,7 @@ import { listaMembrosWorkspace } from "@/server/workspaces/queries";
 /** Obras do workspace (a RLS garante que o usuário participa dele). */
 export async function listaObras(supabase: Cliente, workspaceId: string) {
   const { data, error } = await supabase
-    .from("obras")
+    .from("6wla_obras")
     .select("id, codigo, nome, ativa, criado_em")
     .eq("workspace_id", workspaceId)
     .order("codigo");
@@ -17,7 +17,7 @@ export async function listaObras(supabase: Cliente, workspaceId: string) {
 
 export async function buscaObra(supabase: Cliente, obraId: string) {
   const { data, error } = await supabase
-    .from("obras")
+    .from("6wla_obras")
     .select("id, workspace_id, codigo, nome, ativa")
     .eq("id", obraId)
     .maybeSingle();
@@ -48,13 +48,13 @@ export type Membro = Awaited<ReturnType<typeof listaMembros>>[number];
 export async function listaObrasComResumo(supabase: Cliente, workspaceId: string) {
   const [{ data: obras, error }, { data: restricoes }] = await Promise.all([
     supabase
-      .from("obras")
+      .from("6wla_obras")
       .select("id, codigo, nome, ativa")
       .eq("workspace_id", workspaceId)
       .order("codigo"),
     supabase
-      .from("restricoes")
-      .select("obra_id, status, data_limite, obra:obras!inner(workspace_id)")
+      .from("6wla_restricoes")
+      .select("obra_id, status, data_limite, obra:6wla_obras!inner(workspace_id)")
       .eq("obra.workspace_id", workspaceId),
   ]);
   if (error) throw new Error(`Falha ao listar obras: ${error.message}`);

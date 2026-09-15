@@ -8,8 +8,8 @@ export async function listaMembrosWorkspace(
   workspaceId: string,
 ) {
   const { data, error } = await supabase
-    .from("membros_workspace")
-    .select("papel, perfil:perfis!inner(id, nome, email, ativo)")
+    .from("6wla_membros_workspace")
+    .select("papel, perfil:6wla_perfis!inner(id, nome, email, ativo)")
     .eq("workspace_id", workspaceId)
     .order("papel");
   if (error)
@@ -32,9 +32,9 @@ export type MembroWorkspace = Awaited<
 /** Visão do admin global: todos os workspaces com contagens. */
 export async function listaWorkspacesAdmin(supabase: Cliente) {
   const { data, error } = await supabase
-    .from("workspaces")
+    .from("6wla_workspaces")
     .select(
-      "id, codigo, nome, ativo, criado_em, membros:membros_workspace(count), obras(count)",
+      "id, codigo, nome, ativo, criado_em, membros:6wla_membros_workspace(count), obras:6wla_obras(count)",
     )
     .order("nome");
   if (error) throw new Error(`Falha ao listar workspaces: ${error.message}`);

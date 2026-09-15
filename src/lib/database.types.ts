@@ -34,7 +34,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      importacoes: {
+      "6wla_importacoes": {
         Row: {
           aba: string
           arquivo_nome: string
@@ -49,9 +49,9 @@ export type Database = {
           linhas: Json
           mapa_colunas: Json
           mapa_origem: string
-          modo: Database["public"]["Enums"]["importacao_modo"]
+          modo: Database["public"]["Enums"]["6wla_importacao_modo"]
           obra_id: string
-          status: Database["public"]["Enums"]["importacao_status"]
+          status: Database["public"]["Enums"]["6wla_importacao_status"]
           total_linhas: number
         }
         Insert: {
@@ -68,9 +68,9 @@ export type Database = {
           linhas?: Json
           mapa_colunas?: Json
           mapa_origem?: string
-          modo?: Database["public"]["Enums"]["importacao_modo"]
+          modo?: Database["public"]["Enums"]["6wla_importacao_modo"]
           obra_id: string
-          status?: Database["public"]["Enums"]["importacao_status"]
+          status?: Database["public"]["Enums"]["6wla_importacao_status"]
           total_linhas?: number
         }
         Update: {
@@ -87,65 +87,65 @@ export type Database = {
           linhas?: Json
           mapa_colunas?: Json
           mapa_origem?: string
-          modo?: Database["public"]["Enums"]["importacao_modo"]
+          modo?: Database["public"]["Enums"]["6wla_importacao_modo"]
           obra_id?: string
-          status?: Database["public"]["Enums"]["importacao_status"]
+          status?: Database["public"]["Enums"]["6wla_importacao_status"]
           total_linhas?: number
         }
         Relationships: [
           {
-            foreignKeyName: "importacoes_criado_por_fkey"
+            foreignKeyName: "6wla_importacoes_criado_por_fkey"
             columns: ["criado_por"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "importacoes_obra_id_fkey"
+            foreignKeyName: "6wla_importacoes_obra_id_fkey"
             columns: ["obra_id"]
             isOneToOne: false
-            referencedRelation: "obras"
+            referencedRelation: "6wla_obras"
             referencedColumns: ["id"]
           },
         ]
       }
-      membros_workspace: {
+      "6wla_membros_workspace": {
         Row: {
           criado_em: string
-          papel: Database["public"]["Enums"]["workspace_papel"]
+          papel: Database["public"]["Enums"]["6wla_workspace_papel"]
           user_id: string
           workspace_id: string
         }
         Insert: {
           criado_em?: string
-          papel?: Database["public"]["Enums"]["workspace_papel"]
+          papel?: Database["public"]["Enums"]["6wla_workspace_papel"]
           user_id: string
           workspace_id: string
         }
         Update: {
           criado_em?: string
-          papel?: Database["public"]["Enums"]["workspace_papel"]
+          papel?: Database["public"]["Enums"]["6wla_workspace_papel"]
           user_id?: string
           workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "membros_workspace_user_id_fkey"
+            foreignKeyName: "6wla_membros_workspace_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "membros_workspace_workspace_id_fkey"
+            foreignKeyName: "6wla_membros_workspace_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "6wla_workspaces"
             referencedColumns: ["id"]
           },
         ]
       }
-      notificacoes: {
+      "6wla_notificacoes": {
         Row: {
           autor_id: string | null
           comentario_id: string | null
@@ -153,7 +153,7 @@ export type Database = {
           id: string
           lida_em: string | null
           restricao_id: string
-          tipo: Database["public"]["Enums"]["notificacao_tipo"]
+          tipo: Database["public"]["Enums"]["6wla_notificacao_tipo"]
           user_id: string
         }
         Insert: {
@@ -163,7 +163,7 @@ export type Database = {
           id?: string
           lida_em?: string | null
           restricao_id: string
-          tipo: Database["public"]["Enums"]["notificacao_tipo"]
+          tipo: Database["public"]["Enums"]["6wla_notificacao_tipo"]
           user_id: string
         }
         Update: {
@@ -173,41 +173,41 @@ export type Database = {
           id?: string
           lida_em?: string | null
           restricao_id?: string
-          tipo?: Database["public"]["Enums"]["notificacao_tipo"]
+          tipo?: Database["public"]["Enums"]["6wla_notificacao_tipo"]
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "notificacoes_autor_id_fkey"
+            foreignKeyName: "6wla_notificacoes_autor_id_fkey"
             columns: ["autor_id"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "notificacoes_comentario_id_fkey"
+            foreignKeyName: "6wla_notificacoes_comentario_id_fkey"
             columns: ["comentario_id"]
             isOneToOne: false
-            referencedRelation: "restricao_comentarios"
+            referencedRelation: "6wla_restricao_comentarios"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "notificacoes_restricao_id_fkey"
+            foreignKeyName: "6wla_notificacoes_restricao_id_fkey"
             columns: ["restricao_id"]
             isOneToOne: false
-            referencedRelation: "restricoes"
+            referencedRelation: "6wla_restricoes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "notificacoes_user_id_fkey"
+            foreignKeyName: "6wla_notificacoes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
         ]
       }
-      obras: {
+      "6wla_obras": {
         Row: {
           ativa: boolean
           codigo: string
@@ -234,15 +234,15 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "obras_workspace_id_fkey"
+            foreignKeyName: "6wla_obras_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "6wla_workspaces"
             referencedColumns: ["id"]
           },
         ]
       }
-      perfis: {
+      "6wla_perfis": {
         Row: {
           admin: boolean
           ativo: boolean
@@ -269,7 +269,7 @@ export type Database = {
         }
         Relationships: []
       }
-      restricao_anexos: {
+      "6wla_restricao_anexos": {
         Row: {
           caminho: string
           criado_em: string
@@ -302,22 +302,22 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "restricao_anexos_criado_por_fkey"
+            foreignKeyName: "6wla_restricao_anexos_criado_por_fkey"
             columns: ["criado_por"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricao_anexos_restricao_id_fkey"
+            foreignKeyName: "6wla_restricao_anexos_restricao_id_fkey"
             columns: ["restricao_id"]
             isOneToOne: false
-            referencedRelation: "restricoes"
+            referencedRelation: "6wla_restricoes"
             referencedColumns: ["id"]
           },
         ]
       }
-      restricao_comentarios: {
+      "6wla_restricao_comentarios": {
         Row: {
           autor_id: string | null
           criado_em: string
@@ -344,29 +344,29 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "restricao_comentarios_autor_id_fkey"
+            foreignKeyName: "6wla_restricao_comentarios_autor_id_fkey"
             columns: ["autor_id"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricao_comentarios_restricao_id_fkey"
+            foreignKeyName: "6wla_restricao_comentarios_restricao_id_fkey"
             columns: ["restricao_id"]
             isOneToOne: false
-            referencedRelation: "restricoes"
+            referencedRelation: "6wla_restricoes"
             referencedColumns: ["id"]
           },
         ]
       }
-      restricao_eventos: {
+      "6wla_restricao_eventos": {
         Row: {
           autor_id: string | null
           campo: string | null
           criado_em: string
           id: string
           restricao_id: string
-          tipo: Database["public"]["Enums"]["evento_tipo"]
+          tipo: Database["public"]["Enums"]["6wla_evento_tipo"]
           valor_anterior: string | null
           valor_novo: string | null
         }
@@ -376,7 +376,7 @@ export type Database = {
           criado_em?: string
           id?: string
           restricao_id: string
-          tipo: Database["public"]["Enums"]["evento_tipo"]
+          tipo: Database["public"]["Enums"]["6wla_evento_tipo"]
           valor_anterior?: string | null
           valor_novo?: string | null
         }
@@ -386,28 +386,28 @@ export type Database = {
           criado_em?: string
           id?: string
           restricao_id?: string
-          tipo?: Database["public"]["Enums"]["evento_tipo"]
+          tipo?: Database["public"]["Enums"]["6wla_evento_tipo"]
           valor_anterior?: string | null
           valor_novo?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "restricao_eventos_autor_id_fkey"
+            foreignKeyName: "6wla_restricao_eventos_autor_id_fkey"
             columns: ["autor_id"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricao_eventos_restricao_id_fkey"
+            foreignKeyName: "6wla_restricao_eventos_restricao_id_fkey"
             columns: ["restricao_id"]
             isOneToOne: false
-            referencedRelation: "restricoes"
+            referencedRelation: "6wla_restricoes"
             referencedColumns: ["id"]
           },
         ]
       }
-      restricao_tarefas: {
+      "6wla_restricao_tarefas": {
         Row: {
           concluida: boolean
           concluida_em: string | null
@@ -440,29 +440,29 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "restricao_tarefas_concluida_por_fkey"
+            foreignKeyName: "6wla_restricao_tarefas_concluida_por_fkey"
             columns: ["concluida_por"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricao_tarefas_criado_por_fkey"
+            foreignKeyName: "6wla_restricao_tarefas_criado_por_fkey"
             columns: ["criado_por"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricao_tarefas_restricao_id_fkey"
+            foreignKeyName: "6wla_restricao_tarefas_restricao_id_fkey"
             columns: ["restricao_id"]
             isOneToOne: false
-            referencedRelation: "restricoes"
+            referencedRelation: "6wla_restricoes"
             referencedColumns: ["id"]
           },
         ]
       }
-      restricoes: {
+      "6wla_restricoes": {
         Row: {
           acao: string | null
           area: string | null
@@ -487,10 +487,10 @@ export type Database = {
           numero: number
           obra_id: string
           observacoes: string | null
-          origem: Database["public"]["Enums"]["restricao_origem"]
+          origem: Database["public"]["Enums"]["6wla_restricao_origem"]
           prazo_original: string | null
           previsao_conclusao: string | null
-          prioridade: Database["public"]["Enums"]["restricao_prioridade"]
+          prioridade: Database["public"]["Enums"]["6wla_restricao_prioridade"]
           reprogramacoes: number
           responsavel_email: string | null
           responsavel_id: string | null
@@ -498,7 +498,7 @@ export type Database = {
           responsavel_telefone: string | null
           semana_programada: string | null
           setor: string | null
-          status: Database["public"]["Enums"]["restricao_status"]
+          status: Database["public"]["Enums"]["6wla_restricao_status"]
         }
         Insert: {
           acao?: string | null
@@ -524,10 +524,10 @@ export type Database = {
           numero?: number
           obra_id: string
           observacoes?: string | null
-          origem?: Database["public"]["Enums"]["restricao_origem"]
+          origem?: Database["public"]["Enums"]["6wla_restricao_origem"]
           prazo_original?: string | null
           previsao_conclusao?: string | null
-          prioridade?: Database["public"]["Enums"]["restricao_prioridade"]
+          prioridade?: Database["public"]["Enums"]["6wla_restricao_prioridade"]
           reprogramacoes?: number
           responsavel_email?: string | null
           responsavel_id?: string | null
@@ -535,7 +535,7 @@ export type Database = {
           responsavel_telefone?: string | null
           semana_programada?: string | null
           setor?: string | null
-          status?: Database["public"]["Enums"]["restricao_status"]
+          status?: Database["public"]["Enums"]["6wla_restricao_status"]
         }
         Update: {
           acao?: string | null
@@ -561,10 +561,10 @@ export type Database = {
           numero?: number
           obra_id?: string
           observacoes?: string | null
-          origem?: Database["public"]["Enums"]["restricao_origem"]
+          origem?: Database["public"]["Enums"]["6wla_restricao_origem"]
           prazo_original?: string | null
           previsao_conclusao?: string | null
-          prioridade?: Database["public"]["Enums"]["restricao_prioridade"]
+          prioridade?: Database["public"]["Enums"]["6wla_restricao_prioridade"]
           reprogramacoes?: number
           responsavel_email?: string | null
           responsavel_id?: string | null
@@ -572,40 +572,40 @@ export type Database = {
           responsavel_telefone?: string | null
           semana_programada?: string | null
           setor?: string | null
-          status?: Database["public"]["Enums"]["restricao_status"]
+          status?: Database["public"]["Enums"]["6wla_restricao_status"]
         }
         Relationships: [
           {
-            foreignKeyName: "restricoes_criado_por_fkey"
+            foreignKeyName: "6wla_restricoes_criado_por_fkey"
             columns: ["criado_por"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricoes_importacao_id_fkey"
+            foreignKeyName: "6wla_restricoes_importacao_id_fkey"
             columns: ["importacao_id"]
             isOneToOne: false
-            referencedRelation: "importacoes"
+            referencedRelation: "6wla_importacoes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricoes_obra_id_fkey"
+            foreignKeyName: "6wla_restricoes_obra_id_fkey"
             columns: ["obra_id"]
             isOneToOne: false
-            referencedRelation: "obras"
+            referencedRelation: "6wla_obras"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "restricoes_responsavel_id_fkey"
+            foreignKeyName: "6wla_restricoes_responsavel_id_fkey"
             columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: "perfis"
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
         ]
       }
-      workspaces: {
+      "6wla_workspaces": {
         Row: {
           ativo: boolean
           codigo: string
@@ -634,17 +634,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      "6wla_auth_id_por_email": { Args: { p_email: string }; Returns: string }
     }
     Enums: {
-      evento_tipo: "criada" | "alteracao" | "importada"
-      importacao_modo: "adicionar" | "atualizar"
-      importacao_status: "rascunho" | "concluida" | "cancelada"
-      notificacao_tipo: "mencao" | "atribuicao" | "comentario"
-      restricao_origem: "manual" | "importada"
-      restricao_prioridade: "urgente" | "alta" | "media" | "baixa"
-      restricao_status: "pendente" | "em_andamento" | "concluida" | "cancelada"
-      workspace_papel: "admin" | "gestor" | "membro"
+      "6wla_evento_tipo": "criada" | "alteracao" | "importada"
+      "6wla_importacao_modo": "adicionar" | "atualizar"
+      "6wla_importacao_status": "rascunho" | "concluida" | "cancelada"
+      "6wla_notificacao_tipo": "mencao" | "atribuicao" | "comentario"
+      "6wla_restricao_origem": "manual" | "importada"
+      "6wla_restricao_prioridade": "urgente" | "alta" | "media" | "baixa"
+      "6wla_restricao_status":
+        | "pendente"
+        | "em_andamento"
+        | "concluida"
+        | "cancelada"
+      "6wla_workspace_papel": "admin" | "gestor" | "membro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -775,14 +779,19 @@ export const Constants = {
   },
   public: {
     Enums: {
-      evento_tipo: ["criada", "alteracao", "importada"],
-      importacao_modo: ["adicionar", "atualizar"],
-      importacao_status: ["rascunho", "concluida", "cancelada"],
-      notificacao_tipo: ["mencao", "atribuicao", "comentario"],
-      restricao_origem: ["manual", "importada"],
-      restricao_prioridade: ["urgente", "alta", "media", "baixa"],
-      restricao_status: ["pendente", "em_andamento", "concluida", "cancelada"],
-      workspace_papel: ["admin", "gestor", "membro"],
+      "6wla_evento_tipo": ["criada", "alteracao", "importada"],
+      "6wla_importacao_modo": ["adicionar", "atualizar"],
+      "6wla_importacao_status": ["rascunho", "concluida", "cancelada"],
+      "6wla_notificacao_tipo": ["mencao", "atribuicao", "comentario"],
+      "6wla_restricao_origem": ["manual", "importada"],
+      "6wla_restricao_prioridade": ["urgente", "alta", "media", "baixa"],
+      "6wla_restricao_status": [
+        "pendente",
+        "em_andamento",
+        "concluida",
+        "cancelada",
+      ],
+      "6wla_workspace_papel": ["admin", "gestor", "membro"],
     },
   },
 } as const

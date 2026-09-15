@@ -3,14 +3,14 @@ import "server-only";
 import type { Cliente } from "@/server/auth";
 import type { Tables } from "@/lib/database.types";
 
-export type Restricao = Tables<"restricoes">;
+export type Restricao = Tables<"6wla_restricoes">;
 
 export async function listaRestricoes(
   supabase: Cliente,
   obraId: string,
 ): Promise<Restricao[]> {
   const { data, error } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select("*")
     .eq("obra_id", obraId)
     .order("numero", { ascending: false });
@@ -23,7 +23,7 @@ export async function buscaRestricao(
   restricaoId: string,
 ): Promise<Restricao | null> {
   const { data, error } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select("*")
     .eq("id", restricaoId)
     .maybeSingle();
@@ -44,8 +44,8 @@ export async function listaComentarios(
   restricaoId: string,
 ): Promise<Comentario[]> {
   const { data, error } = await supabase
-    .from("restricao_comentarios")
-    .select("id, texto, mencoes, criado_em, autor:perfis(id, nome)")
+    .from("6wla_restricao_comentarios")
+    .select("id, texto, mencoes, criado_em, autor:6wla_perfis(id, nome)")
     .eq("restricao_id", restricaoId)
     .order("criado_em");
   if (error) throw new Error(`Falha ao listar comentários: ${error.message}`);
@@ -54,7 +54,7 @@ export async function listaComentarios(
 
 export type Evento = {
   id: string;
-  tipo: Tables<"restricao_eventos">["tipo"];
+  tipo: Tables<"6wla_restricao_eventos">["tipo"];
   campo: string | null;
   valor_anterior: string | null;
   valor_novo: string | null;
@@ -67,9 +67,9 @@ export async function listaEventos(
   restricaoId: string,
 ): Promise<Evento[]> {
   const { data, error } = await supabase
-    .from("restricao_eventos")
+    .from("6wla_restricao_eventos")
     .select(
-      "id, tipo, campo, valor_anterior, valor_novo, criado_em, autor:perfis(id, nome)",
+      "id, tipo, campo, valor_anterior, valor_novo, criado_em, autor:6wla_perfis(id, nome)",
     )
     .eq("restricao_id", restricaoId)
     .order("criado_em");
@@ -91,8 +91,8 @@ export async function listaAnexos(
   restricaoId: string,
 ): Promise<Anexo[]> {
   const { data, error } = await supabase
-    .from("restricao_anexos")
-    .select("id, nome, tamanho, tipo_mime, criado_em, autor:perfis(id, nome)")
+    .from("6wla_restricao_anexos")
+    .select("id, nome, tamanho, tipo_mime, criado_em, autor:6wla_perfis(id, nome)")
     .eq("restricao_id", restricaoId)
     .order("criado_em", { ascending: false });
   if (error) throw new Error(`Falha ao listar anexos: ${error.message}`);
@@ -112,9 +112,9 @@ export async function listaTarefas(
   restricaoId: string,
 ): Promise<Tarefa[]> {
   const { data, error } = await supabase
-    .from("restricao_tarefas")
+    .from("6wla_restricao_tarefas")
     .select(
-      "id, texto, concluida, concluida_em, concluidor:perfis!restricao_tarefas_concluida_por_fkey(id, nome)",
+      "id, texto, concluida, concluida_em, concluidor:6wla_perfis!6wla_restricao_tarefas_concluida_por_fkey(id, nome)",
     )
     .eq("restricao_id", restricaoId)
     .order("criado_em");

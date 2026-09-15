@@ -31,7 +31,7 @@ export async function criaRestricao(
 
   const { supabase, perfil } = await exigeMembro(obraId);
   const { data, error } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .insert({
       obra_id: obraId,
       descricao: campos.descricao,
@@ -79,7 +79,7 @@ export async function atualizaCampo(
 
   const { supabase } = await exigeUsuario();
   const { data: atual } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select("obra_id")
     .eq("id", restricaoId)
     .maybeSingle();
@@ -88,7 +88,7 @@ export async function atualizaCampo(
 
   const patch = { [campo]: valorParsed.data } as Partial<RestricaoEditavel>;
   const { data, error } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .update(patch)
     .eq("id", restricaoId)
     .select("*")
@@ -112,7 +112,7 @@ export async function atualizaRestricao(
 
   const { supabase } = await exigeUsuario();
   const { data: atual } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select("obra_id")
     .eq("id", id.data)
     .maybeSingle();
@@ -120,7 +120,7 @@ export async function atualizaRestricao(
   await exigeMembro(atual.obra_id);
 
   const { data, error } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .update(parsed.data)
     .eq("id", id.data)
     .select("*")
@@ -137,14 +137,14 @@ export async function excluiRestricao(restricaoId: string): Promise<Resultado> {
   if (!id.success) return falha("Identificador inválido");
   const { supabase } = await exigeUsuario();
   const { data: atual } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select("obra_id")
     .eq("id", id.data)
     .maybeSingle();
   if (!atual) return falha("Restrição não encontrada");
   await exigeGestor(atual.obra_id);
   const { error } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .delete()
     .eq("id", id.data);
   if (error) return erroInterno("restricoes", error);

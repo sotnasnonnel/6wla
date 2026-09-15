@@ -30,7 +30,7 @@ export async function criaObra(
 
   const { supabase } = await exigeAdminWs(parsed.data.workspaceId);
   const { data, error } = await supabase
-    .from("obras")
+    .from("6wla_obras")
     .insert({
       workspace_id: parsed.data.workspaceId,
       codigo: parsed.data.codigo,

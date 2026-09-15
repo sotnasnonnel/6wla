@@ -27,7 +27,7 @@ const idSchema = z.guid();
 async function contextoDaTarefa(tarefaId: string) {
   const { supabase } = await exigeUsuario();
   const { data: tarefa } = await supabase
-    .from("restricao_tarefas")
+    .from("6wla_restricao_tarefas")
     .select("id, restricao_id")
     .eq("id", tarefaId)
     .maybeSingle();
@@ -49,7 +49,7 @@ async function atualiza(
   contexto: string,
 ): Promise<Resultado> {
   const { error } = await supabase
-    .from("restricao_tarefas")
+    .from("6wla_restricao_tarefas")
     .update(campos)
     .eq("id", tarefaId);
   if (error) return erroInterno(contexto, error);
@@ -66,7 +66,7 @@ export async function criaTarefa(entrada: unknown): Promise<Resultado> {
   if (!restricao) return falha("Restrição não encontrada");
   await exigeMembro(restricao.obra_id);
 
-  const { error } = await supabase.from("restricao_tarefas").insert({
+  const { error } = await supabase.from("6wla_restricao_tarefas").insert({
     restricao_id: restricao.id,
     texto: parsed.data.texto,
     criado_por: perfil.id,
@@ -129,7 +129,7 @@ export async function removeTarefa(tarefaId: string): Promise<Resultado> {
   if (!ctx) return falha("Tarefa não encontrada");
 
   const { error } = await ctx.supabase
-    .from("restricao_tarefas")
+    .from("6wla_restricao_tarefas")
     .delete()
     .eq("id", ctx.tarefa.id);
   if (error) return erroInterno("tarefas.delete", error);

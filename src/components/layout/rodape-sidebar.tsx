@@ -32,7 +32,7 @@ export function RodapeSidebar({
     const supabase = createClient();
     const recontar = async () => {
       const { count } = await supabase
-        .from("notificacoes")
+        .from("6wla_notificacoes")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .is("lida_em", null);
@@ -45,7 +45,7 @@ export function RodapeSidebar({
         {
           event: "*",
           schema: "public",
-          table: "notificacoes",
+          table: "6wla_notificacoes",
           filter: `user_id=eq.${userId}`,
         },
         () => void recontar(),

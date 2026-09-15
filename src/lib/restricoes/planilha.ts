@@ -8,7 +8,7 @@ import {
 } from "./dominio";
 import { SITUACAO_ROTULO, situacaoDe, tempoAtraso } from "./indicadores";
 
-type Restricao = Tables<"restricoes">;
+type Restricao = Tables<"6wla_restricoes">;
 
 /**
  * De-para da tabela da tela para a planilha exportada. As chaves são os ids

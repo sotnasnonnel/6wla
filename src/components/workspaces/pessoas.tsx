@@ -304,7 +304,11 @@ function ModalPessoaNova({
             setErro(null);
             form.reset();
             aoFechar();
-            aoConcluir("Pessoa cadastrada e incluída no workspace.");
+            aoConcluir(
+              r.dados.contaExistente
+                ? "Essa pessoa já tinha conta em outro sistema da PHD: foi incluída no workspace e entra com a senha que já usa. A senha digitada foi ignorada."
+                : "Pessoa cadastrada e incluída no workspace.",
+            );
           });
         }}
       >

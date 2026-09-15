@@ -32,7 +32,7 @@ export async function buscaImportacao(
   importacaoId: string,
 ): Promise<Importacao | null> {
   const { data, error } = await supabase
-    .from("importacoes")
+    .from("6wla_importacoes")
     .select("*")
     .eq("id", importacaoId)
     .maybeSingle();
@@ -51,7 +51,7 @@ export async function buscaImportacao(
 
 export async function listaImportacoes(supabase: Cliente, obraId: string) {
   const { data, error } = await supabase
-    .from("importacoes")
+    .from("6wla_importacoes")
     .select(
       "id, arquivo_nome, aba, status, total_linhas, importadas, criado_em, concluido_em",
     )
@@ -72,7 +72,7 @@ export async function codigosDaObra(
   obraId: string,
 ): Promise<Map<string, string>> {
   const { data, error } = await supabase
-    .from("restricoes")
+    .from("6wla_restricoes")
     .select("id, codigo")
     .eq("obra_id", obraId)
     .not("codigo", "is", null)

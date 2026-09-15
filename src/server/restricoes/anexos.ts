@@ -72,7 +72,7 @@ export async function enviaAnexo(form: FormData): Promise<Resultado<string>> {
     });
   if (envio.error) return erroInterno("anexos.upload", envio.error);
 
-  const { error } = await supabase.from("restricao_anexos").insert({
+  const { error } = await supabase.from("6wla_restricao_anexos").insert({
     restricao_id: restricao.id,
     caminho,
     // Nome de tela é o original; o do Storage é o higienizado.
@@ -97,7 +97,7 @@ export async function removeAnexo(anexoId: string): Promise<Resultado> {
 
   const { supabase } = await exigeUsuario();
   const { data: anexo } = await supabase
-    .from("restricao_anexos")
+    .from("6wla_restricao_anexos")
     .select("id, caminho, restricao_id")
     .eq("id", id.data)
     .maybeSingle();
@@ -108,7 +108,7 @@ export async function removeAnexo(anexoId: string): Promise<Resultado> {
   await exigeGestor(restricao.obra_id);
 
   const { error } = await supabase
-    .from("restricao_anexos")
+    .from("6wla_restricao_anexos")
     .delete()
     .eq("id", anexo.id);
   if (error) return erroInterno("anexos.delete", error);
@@ -138,7 +138,7 @@ export async function urlAnexo(
 
   const { supabase } = await exigeUsuario();
   const { data: anexo } = await supabase
-    .from("restricao_anexos")
+    .from("6wla_restricao_anexos")
     .select("id, caminho, nome, restricao_id")
     .eq("id", id.data)
     .maybeSingle();

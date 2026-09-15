@@ -114,7 +114,7 @@ export function GradeRestricoes({
         {
           event: "*",
           schema: "public",
-          table: "restricoes",
+          table: "6wla_restricoes",
           filter: `obra_id=eq.${obraId}`,
         },
         () => router.refresh(),
