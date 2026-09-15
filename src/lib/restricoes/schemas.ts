@@ -95,3 +95,15 @@ export const comentarioSchema = z.object({
   texto: z.string().trim().min(1, 'Escreva algo').max(4000),
   mencoes: z.array(z.guid()).max(50).default([]),
 });
+
+/** Texto de uma tarefa do checklist da restrição. */
+export const textoTarefaSchema = z
+  .string()
+  .trim()
+  .min(1, 'Escreva a tarefa')
+  .max(500, 'Tarefa com no máximo 500 caracteres');
+
+export const criaTarefaSchema = z.object({
+  restricaoId: z.guid(),
+  texto: textoTarefaSchema,
+});

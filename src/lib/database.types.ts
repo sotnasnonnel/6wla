@@ -407,6 +407,61 @@ export type Database = {
           },
         ]
       }
+      restricao_tarefas: {
+        Row: {
+          concluida: boolean
+          concluida_em: string | null
+          concluida_por: string | null
+          criado_em: string
+          criado_por: string | null
+          id: string
+          restricao_id: string
+          texto: string
+        }
+        Insert: {
+          concluida?: boolean
+          concluida_em?: string | null
+          concluida_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          restricao_id: string
+          texto: string
+        }
+        Update: {
+          concluida?: boolean
+          concluida_em?: string | null
+          concluida_por?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          restricao_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restricao_tarefas_concluida_por_fkey"
+            columns: ["concluida_por"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricao_tarefas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restricao_tarefas_restricao_id_fkey"
+            columns: ["restricao_id"]
+            isOneToOne: false
+            referencedRelation: "restricoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restricoes: {
         Row: {
           acao: string | null

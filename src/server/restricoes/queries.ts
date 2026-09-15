@@ -98,3 +98,26 @@ export async function listaAnexos(
   if (error) throw new Error(`Falha ao listar anexos: ${error.message}`);
   return data;
 }
+
+export type Tarefa = {
+  id: string;
+  texto: string;
+  concluida: boolean;
+  concluida_em: string | null;
+  concluidor: { id: string; nome: string } | null;
+};
+
+export async function listaTarefas(
+  supabase: Cliente,
+  restricaoId: string,
+): Promise<Tarefa[]> {
+  const { data, error } = await supabase
+    .from("restricao_tarefas")
+    .select(
+      "id, texto, concluida, concluida_em, concluidor:perfis!restricao_tarefas_concluida_por_fkey(id, nome)",
+    )
+    .eq("restricao_id", restricaoId)
+    .order("criado_em");
+  if (error) throw new Error(`Falha ao listar tarefas: ${error.message}`);
+  return data;
+}

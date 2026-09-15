@@ -8,10 +8,12 @@ import {
   listaAnexos,
   listaComentarios,
   listaEventos,
+  listaTarefas,
 } from "@/server/restricoes/queries";
 import { DetalhesRestricao } from "@/components/restricoes/detalhes";
 import { ChatRestricao } from "@/components/restricoes/chat";
 import { AnexosRestricao } from "@/components/restricoes/anexos";
+import { ChecklistRestricao } from "@/components/restricoes/checklist";
 import { HistoricoRestricao } from "@/components/restricoes/historico";
 import { Etiqueta } from "@/components/ui/basicos";
 import {
@@ -39,12 +41,14 @@ export default async function PaginaRestricao({
   const restricao = await buscaRestricao(supabase, restricaoId);
   if (!restricao || restricao.obra_id !== obraId) notFound();
 
-  const [membros, comentarios, eventos, anexos] = await Promise.all([
+  const [membros, comentarios, eventos, anexos, tarefas] = await Promise.all([
     listaMembros(supabase, obraId),
     listaComentarios(supabase, restricaoId),
     listaEventos(supabase, restricaoId),
     listaAnexos(supabase, restricaoId),
+    listaTarefas(supabase, restricaoId),
   ]);
+  const tarefasFeitas = tarefas.filter((t) => t.concluida).length;
   const nomes = new Map(membros.map((m) => [m.id, m.nome]));
   const atrasada = estaAtrasada(restricao);
 
@@ -90,6 +94,19 @@ export default async function PaginaRestricao({
               membros={membros}
               papel={papel}
             />
+          </section>
+          <section className="rounded-lg border border-[var(--borda)] bg-white p-3 shadow-sm sm:p-4">
+            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--tinta-forte)]">
+              Checklist
+              {tarefas.length > 0 ? (
+                <Etiqueta
+                  tom={tarefasFeitas === tarefas.length ? "verde" : "neutro"}
+                >
+                  {tarefasFeitas}/{tarefas.length}
+                </Etiqueta>
+              ) : null}
+            </h2>
+            <ChecklistRestricao restricaoId={restricaoId} tarefas={tarefas} />
           </section>
           <section className="rounded-lg border border-[var(--borda)] bg-white p-3 shadow-sm sm:p-4">
             <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--tinta-forte)]">
