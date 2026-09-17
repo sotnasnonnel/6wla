@@ -1,5 +1,6 @@
 import "server-only";
 
+import { todasAsPaginas } from "@/server/paginacao";
 import type { Cliente } from "@/server/auth";
 import type { LinhaPainel } from "@/components/indicadores/painel";
 
@@ -13,16 +14,20 @@ export async function linhasDaObra(
   supabase: Cliente,
   obraId: string,
 ): Promise<LinhaPainel[]> {
-  const { data, error } = await supabase
-    .from("6wla_restricoes")
-    .select(
-      "id, obra_id, numero, descricao, acao, status, data_criacao, data_limite, previsao_conclusao, data_conclusao, responsavel_nome, responsavel_id, area, setor, causa_6m, classificacao, atividade_impactada, responsavel:6wla_perfis!6wla_restricoes_responsavel_id_fkey(nome)",
-    )
-    .eq("obra_id", obraId)
-    .order("numero");
-  if (error) throw new Error(`Falha ao carregar indicadores: ${error.message}`);
+  const data = await todasAsPaginas(
+    (de, ate) =>
+      supabase
+        .from("6wla_restricoes")
+        .select(
+          "id, obra_id, numero, descricao, acao, status, data_criacao, data_limite, previsao_conclusao, data_conclusao, responsavel_nome, responsavel_id, area, setor, causa_6m, classificacao, atividade_impactada, responsavel:6wla_perfis!6wla_restricoes_responsavel_id_fkey(nome)",
+        )
+        .eq("obra_id", obraId)
+        .order("numero")
+        .range(de, ate),
+    "Falha ao carregar indicadores",
+  );
 
-  return (data ?? []).map((r) => ({
+  return data.map((r) => ({
     id: r.id,
     obra_id: r.obra_id,
     numero: r.numero,

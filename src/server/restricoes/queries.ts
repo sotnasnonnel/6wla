@@ -1,21 +1,46 @@
 import "server-only";
 
+import { todasAsPaginas } from "@/server/paginacao";
 import type { Cliente } from "@/server/auth";
 import type { Tables } from "@/lib/database.types";
 
 export type Restricao = Tables<"6wla_restricoes">;
 
-export async function listaRestricoes(
+export function listaRestricoes(
   supabase: Cliente,
   obraId: string,
 ): Promise<Restricao[]> {
-  const { data, error } = await supabase
-    .from("6wla_restricoes")
-    .select("*")
-    .eq("obra_id", obraId)
-    .order("numero", { ascending: false });
-  if (error) throw new Error(`Falha ao listar restrições: ${error.message}`);
-  return data;
+  return todasAsPaginas(
+    (de, ate) =>
+      supabase
+        .from("6wla_restricoes")
+        .select("*")
+        .eq("obra_id", obraId)
+        .order("numero", { ascending: false })
+        .range(de, ate),
+    "Falha ao listar restrições",
+  );
+}
+
+/**
+ * Colunas da grade sem `extras` (o jsonb das colunas extras da planilha, a
+ * parte pesada). Basta para filtrar e ordenar como a grade no anterior/
+ * próxima do detalhe.
+ */
+const COLUNAS_NAVEGACAO =
+  "id, numero, status, prioridade, codigo, descricao, acao, responsavel_id, responsavel_nome, responsavel_email, responsavel_telefone, descricao_status, causa_6m, classificacao, area, setor, localizacao, id_atividade, atividade_impactada, inicio_atividade, data_criacao, data_limite, previsao_conclusao, data_conclusao, semana_programada, observacoes, prazo_original, reprogramacoes, origem, criado_em, atualizado_em";
+
+export function listaRestricoesParaNavegar(supabase: Cliente, obraId: string) {
+  return todasAsPaginas(
+    (de, ate) =>
+      supabase
+        .from("6wla_restricoes")
+        .select(COLUNAS_NAVEGACAO)
+        .eq("obra_id", obraId)
+        .order("numero", { ascending: false })
+        .range(de, ate),
+    "Falha ao listar restrições",
+  );
 }
 
 export async function buscaRestricao(
@@ -92,7 +117,9 @@ export async function listaAnexos(
 ): Promise<Anexo[]> {
   const { data, error } = await supabase
     .from("6wla_restricao_anexos")
-    .select("id, nome, tamanho, tipo_mime, criado_em, autor:6wla_perfis(id, nome)")
+    .select(
+      "id, nome, tamanho, tipo_mime, criado_em, autor:6wla_perfis(id, nome)",
+    )
     .eq("restricao_id", restricaoId)
     .order("criado_em", { ascending: false });
   if (error) throw new Error(`Falha ao listar anexos: ${error.message}`);
