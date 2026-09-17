@@ -1,0 +1,19 @@
+# Nada disto entra na imagem.
+.git
+.next
+node_modules
+coverage
+playwright-report
+test-results
+.playwright-mcp
+.claude
+.vscode
+.mcp.json
+# Segredos: só no servidor, em tempo de execução.
+.env
+.env.*
+# Planilhas, PDFs e prints de trabalho (a 6wla.xlsx tem dados pessoais).
+*.xlsx
+*.pdf
+/*.png
+supabase/.temp

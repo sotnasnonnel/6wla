@@ -1,0 +1,23 @@
+# 6wla em produção, atrás do Nginx/Caddy do servidor. Guia: docs/DEPLOY.md.
+#
+#   docker compose --env-file 6wla.producao up -d --build
+#
+# `6wla.producao` fica SÓ no servidor (nunca no git) e tem as variáveis
+# listadas no guia. As NEXT_PUBLIC_* são lidas no build (args) e as demais
+# no container (env_file).
+services:
+  6wla:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    image: 6wla:latest
+    container_name: 6wla
+    restart: unless-stopped
+    env_file:
+      - 6wla.producao
+    # Só a própria máquina acessa; o Nginx/Caddy publica com HTTPS.
+    ports:
+      - "127.0.0.1:3006:3000"

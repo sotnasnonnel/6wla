@@ -13,6 +13,9 @@ next-env.d.ts
 .env.*
 !.env.example
 
+# variáveis de produção do servidor (docker compose --env-file)
+6wla.producao
+
 # testes
 coverage/
 playwright-report/
