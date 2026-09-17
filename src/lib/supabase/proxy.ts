@@ -31,14 +31,24 @@ export async function atualizaSessao(request: NextRequest) {
     },
   );
 
-  // getUser() valida o token no servidor de auth; getSession() só lê o cookie.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() renova a sessão se preciso e confere a assinatura do JWT
+  // localmente (chave ES256 do projeto), sem ida ao Auth a cada requisição.
+  // getSession() não serviria: só lê o cookie, sem validar.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   const { pathname } = request.nextUrl;
   // Allowlist explícita: rota nova nasce protegida por padrão.
-  const publica = pathname === "/login" || pathname === "/api/powerbi/restricoes";
+  // /definir-senha recebe o link do convite e o de redefinição; quem chega
+  // logado NÃO é redirecionado (o link de recuperação abre a sessão antes de
+  // a pessoa trocar a senha).
+  const publica =
+    pathname === "/login" ||
+    pathname === "/definir-senha" ||
+    pathname === "/api/powerbi/restricoes" ||
+    // Chamadas pelo n8n; a proteção é o token (AUTOMACOES_TOKEN).
+    pathname === "/api/automacoes/pendentes" ||
+    pathname === "/api/automacoes/confirmar";
 
   if (!user && !publica) {
     const url = request.nextUrl.clone();

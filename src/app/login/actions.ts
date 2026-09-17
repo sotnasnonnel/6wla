@@ -3,6 +3,15 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ipDaRequisicao, permite } from "@/server/limite";
+import {
+  marcaTrocaSenha,
+  precisaTrocarSenha,
+} from "@/server/admin/troca-senha";
+import {
+  enviaLinkRedefinicao,
+  urlDefinirSenha,
+} from "@/server/links-senha";
 
 const loginSchema = z.object({
   email: z.email("E-mail inválido"),
@@ -50,7 +59,10 @@ export async function sair() {
 
 const trocaSenhaSchema = z
   .object({
-    senha: z.string().min(8, "Use pelo menos 8 caracteres"),
+    senha: z
+      .string()
+      .min(8, "Use pelo menos 8 caracteres")
+      .max(72, "Use no máximo 72 caracteres"),
     confirma: z.string(),
   })
   .refine((v) => v.senha === v.confirma, {
@@ -79,5 +91,75 @@ export async function trocarSenha(
     password: parsed.data.senha,
   });
   if (error) return { erro: "Não foi possível trocar a senha" };
+  if (precisaTrocarSenha(user)) {
+    const erroMarca = await marcaTrocaSenha(user, false);
+    if (erroMarca) {
+      console.error("[trocarSenha.marca]", erroMarca);
+      return { erro: "Senha trocada, mas não foi possível liberar o acesso. Tente de novo." };
+    }
+    // Novo JWT já sem a marca: o banco nega tudo a um JWT que ainda a tenha.
+    const { error: erroSessao } = await supabase.auth.refreshSession();
+    if (erroSessao) {
+      console.error("[trocarSenha.sessao]", erroSessao);
+      return { erro: "Senha trocada. Saia e entre de novo com a nova senha." };
+    }
+    redirect("/obras");
+  }
   return { ok: true };
+}
+
+/**
+ * /definir-senha (convite ou "esqueci minha senha"): a sessão já foi aberta
+ * pelo link no navegador. Troca a senha e entra no app.
+ */
+export async function definirSenha(
+  estado: EstadoSenha,
+  form: FormData,
+): Promise<EstadoSenha> {
+  const r = await trocarSenha(estado, form);
+  if (r.ok) redirect("/obras");
+  return r;
+}
+
+const esqueciSchema = z.object({
+  email: z.email("E-mail inválido").transform((e) => e.toLowerCase()),
+});
+
+export type EstadoEsqueci = { erro?: string; enviado?: boolean };
+
+/**
+ * "Esqueci minha senha". Responde igual exista ou não a conta: senão a tela
+ * vira um verificador de e-mails cadastrados. Falha do envio só vai para o
+ * log, pelo mesmo motivo.
+ */
+export async function pedirLinkSenha(
+  _estado: EstadoEsqueci,
+  form: FormData,
+): Promise<EstadoEsqueci> {
+  const parsed = esqueciSchema.safeParse({ email: form.get("email") });
+  if (!parsed.success)
+    return { erro: parsed.error.issues[0]?.message ?? "E-mail inválido" };
+
+  // Freio contra enxurrada de e-mails (a cota de envio é dividida com o PHD
+  // View). Acima do limite a resposta é a mesma, para não virar oráculo.
+  const ip = await ipDaRequisicao();
+  const QUINZE_MIN = 15 * 60_000;
+  if (
+    !permite(`senha:ip:${ip}`, 5, QUINZE_MIN) ||
+    !permite(`senha:email:${parsed.data.email}`, 3, QUINZE_MIN) ||
+    // Teto da instância: segura mesmo quem troca de IP a cada pedido.
+    !permite("senha:global", 30, QUINZE_MIN)
+  ) {
+    console.warn("[pedirLinkSenha.limite]", { ip });
+    return { enviado: true };
+  }
+
+  const redirectTo = await urlDefinirSenha();
+  if (!redirectTo) {
+    console.error("[pedirLinkSenha.site]", "origem desconhecida");
+    return { erro: "Não foi possível enviar agora. Tente de novo." };
+  }
+  const erro = await enviaLinkRedefinicao(parsed.data.email, redirectTo);
+  if (erro) console.error("[pedirLinkSenha]", erro);
+  return { enviado: true };
 }
