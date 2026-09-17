@@ -34,6 +34,175 @@ export type Database = {
   }
   public: {
     Tables: {
+      "6wla_automacao_fluxos": {
+        Row: {
+          ativo: boolean
+          erro: string | null
+          n8n_id: string | null
+          nome: string
+          obra_id: string
+          sincronizado_em: string
+        }
+        Insert: {
+          ativo?: boolean
+          erro?: string | null
+          n8n_id?: string | null
+          nome: string
+          obra_id: string
+          sincronizado_em?: string
+        }
+        Update: {
+          ativo?: boolean
+          erro?: string | null
+          n8n_id?: string | null
+          nome?: string
+          obra_id?: string
+          sincronizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "6wla_automacao_fluxos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: true
+            referencedRelation: "6wla_obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      "6wla_automacao_envios": {
+        Row: {
+          agendado_para: string
+          assunto: string
+          automacao_id: string
+          confirmado_em: string | null
+          copias: string[]
+          criado_em: string
+          destinatario: string
+          entregue_em: string | null
+          erro: string | null
+          id: string
+          status: string
+          teste: boolean
+          total_itens: number
+        }
+        Insert: {
+          agendado_para: string
+          assunto?: string
+          automacao_id: string
+          confirmado_em?: string | null
+          copias?: string[]
+          criado_em?: string
+          destinatario: string
+          entregue_em?: string | null
+          erro?: string | null
+          id?: string
+          status?: string
+          teste?: boolean
+          total_itens?: number
+        }
+        Update: {
+          agendado_para?: string
+          assunto?: string
+          automacao_id?: string
+          confirmado_em?: string | null
+          copias?: string[]
+          criado_em?: string
+          destinatario?: string
+          entregue_em?: string | null
+          erro?: string | null
+          id?: string
+          status?: string
+          teste?: boolean
+          total_itens?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "6wla_automacao_envios_automacao_id_fkey"
+            columns: ["automacao_id"]
+            isOneToOne: false
+            referencedRelation: "6wla_automacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      "6wla_automacoes": {
+        Row: {
+          agrupar_por_responsavel: boolean
+          assunto: string
+          ativa: boolean
+          atualizado_em: string
+          colunas: string[]
+          copias: string[]
+          criado_em: string
+          criado_por: string | null
+          destinatarios: string[]
+          destino: string
+          dias_semana: number[]
+          fuso: string
+          hora: string
+          id: string
+          nome: string
+          obra_id: string
+          situacoes: string[]
+          ultimo_disparo: string | null
+        }
+        Insert: {
+          agrupar_por_responsavel?: boolean
+          assunto: string
+          ativa?: boolean
+          atualizado_em?: string
+          colunas: string[]
+          copias?: string[]
+          criado_em?: string
+          criado_por?: string | null
+          destinatarios?: string[]
+          destino: string
+          dias_semana: number[]
+          fuso?: string
+          hora: string
+          id?: string
+          nome: string
+          obra_id: string
+          situacoes: string[]
+          ultimo_disparo?: string | null
+        }
+        Update: {
+          agrupar_por_responsavel?: boolean
+          assunto?: string
+          ativa?: boolean
+          atualizado_em?: string
+          colunas?: string[]
+          copias?: string[]
+          criado_em?: string
+          criado_por?: string | null
+          destinatarios?: string[]
+          destino?: string
+          dias_semana?: number[]
+          fuso?: string
+          hora?: string
+          id?: string
+          nome?: string
+          obra_id?: string
+          situacoes?: string[]
+          ultimo_disparo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "6wla_automacoes_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "6wla_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "6wla_automacoes_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "6wla_obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       "6wla_importacoes": {
         Row: {
           aba: string
@@ -51,6 +220,7 @@ export type Database = {
           mapa_origem: string
           modo: Database["public"]["Enums"]["6wla_importacao_modo"]
           obra_id: string
+          relatorio: Json
           status: Database["public"]["Enums"]["6wla_importacao_status"]
           total_linhas: number
         }
@@ -70,6 +240,7 @@ export type Database = {
           mapa_origem?: string
           modo?: Database["public"]["Enums"]["6wla_importacao_modo"]
           obra_id: string
+          relatorio?: Json
           status?: Database["public"]["Enums"]["6wla_importacao_status"]
           total_linhas?: number
         }
@@ -89,6 +260,7 @@ export type Database = {
           mapa_origem?: string
           modo?: Database["public"]["Enums"]["6wla_importacao_modo"]
           obra_id?: string
+          relatorio?: Json
           status?: Database["public"]["Enums"]["6wla_importacao_status"]
           total_linhas?: number
         }
@@ -105,6 +277,49 @@ export type Database = {
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "6wla_obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      "6wla_membros_obra": {
+        Row: {
+          adicionado_por: string | null
+          criado_em: string
+          obra_id: string
+          user_id: string
+        }
+        Insert: {
+          adicionado_por?: string | null
+          criado_em?: string
+          obra_id: string
+          user_id: string
+        }
+        Update: {
+          adicionado_por?: string | null
+          criado_em?: string
+          obra_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "6wla_membros_obra_adicionado_por_fkey"
+            columns: ["adicionado_por"]
+            isOneToOne: false
+            referencedRelation: "6wla_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "6wla_membros_obra_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "6wla_obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "6wla_membros_obra_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
         ]
@@ -132,7 +347,7 @@ export type Database = {
           {
             foreignKeyName: "6wla_membros_workspace_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "6wla_perfis"
             referencedColumns: ["id"]
           },
@@ -212,6 +427,7 @@ export type Database = {
           ativa: boolean
           codigo: string
           criado_em: string
+          criado_por: string | null
           id: string
           nome: string
           workspace_id: string
@@ -220,6 +436,7 @@ export type Database = {
           ativa?: boolean
           codigo: string
           criado_em?: string
+          criado_por?: string | null
           id?: string
           nome: string
           workspace_id: string
@@ -228,11 +445,19 @@ export type Database = {
           ativa?: boolean
           codigo?: string
           criado_em?: string
+          criado_por?: string | null
           id?: string
           nome?: string
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "6wla_obras_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "6wla_perfis"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "6wla_obras_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -635,6 +860,25 @@ export type Database = {
     }
     Functions: {
       "6wla_auth_id_por_email": { Args: { p_email: string }; Returns: string }
+      "6wla_encerra_sessoes": { Args: { p_user: string }; Returns: undefined }
+      "6wla_reivindica_envios": {
+        Args: { p_limite: number; p_obra_id: string }
+        Returns: {
+            agendado_para: string
+            assunto: string
+            automacao_id: string
+            confirmado_em: string | null
+            copias: string[]
+            criado_em: string
+            destinatario: string
+            entregue_em: string | null
+            erro: string | null
+            id: string
+            status: string
+            teste: boolean
+            total_itens: number
+        }[]
+      }
     }
     Enums: {
       "6wla_evento_tipo": "criada" | "alteracao" | "importada"

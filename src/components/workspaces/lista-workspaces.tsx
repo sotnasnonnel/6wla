@@ -1,13 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { criaWorkspace } from "@/server/workspaces/actions";
+import { useFormStatus } from "react-dom";
+import {
+  criaWorkspace,
+  selecionaWorkspace,
+} from "@/server/workspaces/actions";
 import {
   Alerta,
   Botao,
   Campo,
   CampoRotulado,
+  Etiqueta,
   Vazio,
 } from "@/components/ui/basicos";
 import { Modal } from "@/components/ui/modal";
@@ -27,10 +33,16 @@ function plural(n: number, singular: string, plural: string) {
 
 export function ListaWorkspaces({
   workspaces,
+  atualId,
+  abrirCriacao = false,
 }: {
   workspaces: WorkspaceResumo[];
+  /** Workspace em que o admin está agora (cookie), para marcar na lista. */
+  atualId: string | null;
+  /** `?novo=1`: chega com o cadastro aberto (vindo de um estado vazio). */
+  abrirCriacao?: boolean;
 }) {
-  const [aberto, setAberto] = useState(false);
+  const [aberto, setAberto] = useState(abrirCriacao);
 
   return (
     <>
@@ -40,8 +52,8 @@ export function ListaWorkspaces({
             Workspaces
           </h1>
           <p className="mt-0.5 text-sm text-[var(--tinta-fraca)]">
-            Cada workspace é uma empresa isolada: quem está nele vê só as obras
-            e as pessoas dele.
+            Cada workspace é uma empresa. Cada pessoa pertence a um só, e vê
+            apenas as obras em que foi incluída.
           </p>
         </div>
         <Botao onClick={() => setAberto(true)}>Criar workspace</Botao>
@@ -50,7 +62,7 @@ export function ListaWorkspaces({
       {workspaces.length === 0 ? (
         <Vazio
           titulo="Nenhum workspace"
-          descricao="Crie o primeiro workspace e nomeie quem vai administrá-lo."
+          descricao="Crie o primeiro workspace. Depois cadastre o gestor dele em Usuários."
           acao={<Botao onClick={() => setAberto(true)}>Criar workspace</Botao>}
         />
       ) : (
@@ -58,27 +70,45 @@ export function ListaWorkspaces({
           {workspaces.map((w) => (
             <li
               key={w.id}
-              className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1"
+              // A linha inteira leva às pessoas do workspace (link esticado);
+              // "Entrar" fica por cima, clicável à parte.
+              className="relative flex flex-col gap-2 px-4 py-3 transition hover:bg-[var(--plano)] sm:flex-row sm:items-center sm:gap-4"
             >
-              <span className="font-mono text-xs font-semibold text-[var(--marca-azul)] sm:w-16 sm:shrink-0">
-                {w.codigo}
-              </span>
-              <span className="min-w-0 flex-1 text-sm text-[var(--tinta-forte)] sm:truncate">
-                {w.nome}
-              </span>
-              <span className="flex items-center gap-3 text-sm sm:contents">
-              {!w.ativo ? (
-                <span className="text-xs text-[var(--tinta-fraca)]">
-                  inativo
-                </span>
-              ) : null}
-              <span className="text-sm tabular-nums text-[var(--tinta-fraca)]">
-                {plural(w.total_obras, "obra", "obras")}
-              </span>
-              <span className="text-sm tabular-nums text-[var(--tinta-fraca)] sm:w-24 sm:text-right">
-                {plural(w.total_membros, "pessoa", "pessoas")}
-              </span>
-              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs font-semibold text-[var(--marca-azul)]">
+                    {w.codigo}
+                  </span>
+                  <Link
+                    href={`/admin/usuarios?workspace=${w.id}`}
+                    className="min-w-0 truncate text-sm font-medium text-[var(--tinta-forte)] after:absolute after:inset-0 hover:text-[var(--marca-terracotta)]"
+                  >
+                    {w.nome}
+                  </Link>
+                  {!w.ativo ? <Etiqueta>Inativo</Etiqueta> : null}
+                  {w.id === atualId ? (
+                    <Etiqueta tom="azul">Você está aqui</Etiqueta>
+                  ) : null}
+                </div>
+                <div className="mt-0.5 text-xs tabular-nums text-[var(--tinta-fraca)]">
+                  {plural(w.total_obras, "obra", "obras")} ·{" "}
+                  {plural(w.total_membros, "pessoa", "pessoas")}
+                </div>
+              </div>
+              <div className="relative z-10 flex flex-wrap items-center gap-1">
+                <Link
+                  href={`/admin/usuarios?workspace=${w.id}`}
+                  className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold text-[var(--tinta-media)] transition hover:bg-[var(--marca-gelo)] hover:text-[var(--tinta-forte)] sm:min-h-9"
+                >
+                  Ver pessoas
+                </Link>
+                {w.id !== atualId ? (
+                  <form action={selecionaWorkspace}>
+                    <input type="hidden" name="workspaceId" value={w.id} />
+                    <BotaoEntrar />
+                  </form>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>
@@ -86,6 +116,15 @@ export function ListaWorkspaces({
 
       <ModalCriarWorkspace aberto={aberto} aoFechar={() => setAberto(false)} />
     </>
+  );
+}
+
+function BotaoEntrar() {
+  const { pending } = useFormStatus();
+  return (
+    <Botao type="submit" variante="secundario" disabled={pending}>
+      {pending ? "Entrando…" : "Entrar neste workspace"}
+    </Botao>
   );
 }
 
@@ -99,17 +138,22 @@ function ModalCriarWorkspace({
   const router = useRouter();
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, inicia] = useTransition();
+  const fecha = () => {
+    if (pendente) return;
+    setErro(null);
+    aoFechar();
+  };
 
   return (
     <Modal
       aberto={aberto}
-      aoFechar={aoFechar}
+      aoFechar={fecha}
       titulo="Criar workspace"
       descricao="Um workspace agrupa as obras e as pessoas de uma empresa. Nada atravessa de um para outro."
       largura={520}
       rodape={
         <>
-          <Botao variante="secundario" onClick={aoFechar} disabled={pendente}>
+          <Botao variante="secundario" onClick={fecha} disabled={pendente}>
             Cancelar
           </Botao>
           <Botao type="submit" form="form-criar-workspace" disabled={pendente}>
@@ -142,7 +186,7 @@ function ModalCriarWorkspace({
             id="codigo"
             name="codigo"
             required
-            autoFocus
+            data-autofocus
             maxLength={30}
             placeholder="PHD"
           />
@@ -154,19 +198,6 @@ function ModalCriarWorkspace({
             required
             maxLength={120}
             placeholder="PHD Engenharia"
-          />
-        </CampoRotulado>
-        <CampoRotulado
-          id="adminEmail"
-          rotulo="Administrador"
-          dica="opcional, precisa já ter conta"
-          
-        >
-          <Campo
-            id="adminEmail"
-            name="adminEmail"
-            type="email"
-            placeholder="pessoa@empresa.com"
           />
         </CampoRotulado>
         {erro ? <Alerta>{erro}</Alerta> : null}

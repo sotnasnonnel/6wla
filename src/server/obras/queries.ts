@@ -1,10 +1,10 @@
 import "server-only";
 
-import type { Cliente } from "@/server/auth";
+import { buscaObraComWorkspace, type Cliente } from "@/server/auth";
 import { hojeIso, STATUS_ABERTOS } from "@/lib/restricoes/dominio";
 import { listaMembrosWorkspace } from "@/server/workspaces/queries";
 
-/** Obras do workspace (a RLS garante que o usuário participa dele). */
+/** Obras do workspace que o usuário alcança (a RLS filtra as da equipe dele). */
 export async function listaObras(supabase: Cliente, workspaceId: string) {
   const { data, error } = await supabase
     .from("6wla_obras")
@@ -15,27 +15,43 @@ export async function listaObras(supabase: Cliente, workspaceId: string) {
   return data;
 }
 
-export async function buscaObra(supabase: Cliente, obraId: string) {
-  const { data, error } = await supabase
-    .from("6wla_obras")
-    .select("id, workspace_id, codigo, nome, ativa")
-    .eq("id", obraId)
-    .maybeSingle();
-  if (error) throw new Error(`Falha ao buscar obra: ${error.message}`);
-  return data;
+/** A mesma leitura (em cache por requisição) que o guard `exigeMembro` faz. */
+export function buscaObra(supabase: Cliente, obraId: string) {
+  return buscaObraComWorkspace(supabase, obraId);
 }
 
 /**
- * Pessoas que podem ser responsável ou mencionadas numa obra: todos os
- * membros ativos do workspace dela.
+ * Equipe da obra: o dono (gestor que criou) e quem ele incluiu, com o papel
+ * de cada um no workspace. Só pessoas ativas e ainda no workspace — as mesmas
+ * que o banco aceita como responsável ou menção.
  */
-export async function listaMembros(supabase: Cliente, obraId: string) {
+export async function listaEquipe(supabase: Cliente, obraId: string) {
   const obra = await buscaObra(supabase, obraId);
   if (!obra) return [];
-  const membros = await listaMembrosWorkspace(supabase, obra.workspace_id);
+  const [membros, { data: equipe, error }] = await Promise.all([
+    listaMembrosWorkspace(supabase, obra.workspace_id),
+    supabase
+      .from("6wla_membros_obra")
+      .select("user_id")
+      .eq("obra_id", obraId),
+  ]);
+  if (error) throw new Error(`Falha ao listar equipe: ${error.message}`);
+  const naEquipe = new Set((equipe ?? []).map((e) => e.user_id));
   return membros
-    .filter((m) => m.ativo)
-    .map(({ id, nome, email, papel }) => ({ id, nome, email, papel }));
+    .filter((m) => m.ativo && (m.id === obra.criado_por || naEquipe.has(m.id)))
+    .map(({ id, nome, email, papel }) => ({
+      id,
+      nome,
+      email,
+      papel,
+      dono: id === obra.criado_por,
+    }));
+}
+
+/** Pessoas que podem ser responsável ou mencionadas numa obra: a equipe. */
+export async function listaMembros(supabase: Cliente, obraId: string) {
+  const equipe = await listaEquipe(supabase, obraId);
+  return equipe.map(({ id, nome, email, papel }) => ({ id, nome, email, papel }));
 }
 
 export type Membro = Awaited<ReturnType<typeof listaMembros>>[number];

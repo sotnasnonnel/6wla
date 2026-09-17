@@ -158,7 +158,7 @@ function traduzErro(erro: { message: string }): string {
   const m = erro.message;
   if (m.includes("semana programada")) return "Só gestor da obra altera a semana programada.";
   if (m.includes("concluida_tem_data")) return "Restrição concluída precisa de data de conclusão.";
-  if (m.includes("membro da obra")) return "O responsável precisa ser membro da obra.";
+  if (m.includes("equipe da obra")) return "O responsável precisa estar na equipe da obra.";
   console.error("[restricoes]", erro);
   return "Não foi possível salvar. Tente de novo.";
 }

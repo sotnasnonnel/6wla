@@ -10,6 +10,7 @@ import {
   sucesso,
   type Resultado,
 } from "@/server/auth";
+import { listaMembros } from "@/server/obras/queries";
 
 export async function comenta(
   entrada: unknown,
@@ -28,12 +29,10 @@ export async function comenta(
   if (!r) return falha("Restrição não encontrada");
   const { obra } = await exigeMembro(r.obra_id);
 
-  // Só membro do workspace pode ser mencionado (o gatilho também filtra).
-  const { data: membros } = await supabase
-    .from("6wla_membros_workspace")
-    .select("user_id")
-    .eq("workspace_id", obra.workspace_id);
-  const permitidos = new Set((membros ?? []).map((m) => m.user_id));
+  // Só quem está na equipe da obra pode ser mencionado (o gatilho também
+  // filtra; aqui evita gravar ids que seriam ignorados).
+  const equipe = await listaMembros(supabase, obra.id);
+  const permitidos = new Set(equipe.map((m) => m.id));
   const mencoesValidas = [...new Set(mencoes)].filter((id) =>
     permitidos.has(id),
   );
