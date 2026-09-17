@@ -9,8 +9,9 @@ import { z } from "zod";
 const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  // Ainda sem domínio publicado: por enquanto o app só roda em `npm run dev`.
-  NEXT_PUBLIC_SITE_URL: z.url().default("http://localhost:3000"),
+  // Origem pública dos links de e-mail (convite, redefinir senha). Opcional:
+  // sem ela, vale o host da requisição (ver src/lib/site-url.ts).
+  NEXT_PUBLIC_SITE_URL: z.url().optional(),
 });
 
 const serverSchema = z.object({
@@ -18,6 +19,17 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   // Token que o Power BI manda no header Authorization para ler a API.
   POWERBI_API_TOKEN: z.string().min(24).optional(),
+  // Token do fluxo n8n que entrega os e-mails das automações. Sem ele, as
+  // rotas /api/automacoes/* respondem 503.
+  AUTOMACOES_TOKEN: z.string().min(24).optional(),
+  // API do n8n: a aba Automações cria o fluxo "<código> - Restrições" de cada
+  // obra. Sem as quatro, a sincronização fica desligada (a aba avisa).
+  N8N_URL: z.url().optional(),
+  N8N_API_KEY: z.string().min(1).optional(),
+  // Ids das credenciais já cadastradas no n8n (SMTP e Header Auth com o
+  // Bearer do AUTOMACOES_TOKEN). O app só as referencia.
+  N8N_CREDENCIAL_SMTP_ID: z.string().min(1).optional(),
+  N8N_CREDENCIAL_TOKEN_ID: z.string().min(1).optional(),
   // Gemini: sugestão de mapeamento de colunas na importação. Opcional —
   // sem a chave, vale só a detecção por apelidos.
   GEMINI_API_KEY: z.string().min(1).optional(),
@@ -31,7 +43,7 @@ const serverSchema = z.object({
 const publicEnv = publicSchema.safeParse({
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || undefined,
 });
 
 if (!publicEnv.success) {
@@ -56,6 +68,11 @@ export function serverEnv() {
   const parsed = serverSchema.safeParse({
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     POWERBI_API_TOKEN: process.env.POWERBI_API_TOKEN || undefined,
+    AUTOMACOES_TOKEN: process.env.AUTOMACOES_TOKEN || undefined,
+    N8N_URL: process.env.N8N_URL || undefined,
+    N8N_API_KEY: process.env.N8N_API_KEY || undefined,
+    N8N_CREDENCIAL_SMTP_ID: process.env.N8N_CREDENCIAL_SMTP_ID || undefined,
+    N8N_CREDENCIAL_TOKEN_ID: process.env.N8N_CREDENCIAL_TOKEN_ID || undefined,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || undefined,
     GEMINI_MODEL: process.env.GEMINI_MODEL || undefined,
   });
