@@ -6,6 +6,7 @@ import { buscaObra } from "@/server/obras/queries";
 import { listaImportacoes } from "@/server/importacao/queries";
 import { iaDisponivel } from "@/server/importacao/gemini";
 import { FormUpload } from "@/components/importacao/upload";
+import { EtapasImportacao } from "@/components/importacao/etapas";
 import { Cartao, Etiqueta, CabecalhoPagina } from "@/components/ui/basicos";
 import { formataDataHora } from "@/lib/restricoes/dominio";
 
@@ -35,7 +36,11 @@ export default async function PaginaImportar({
       </Link>
       <CabecalhoPagina
         titulo="Importar planilha"
-        apoio="Envie o arquivo .xlsx. Na próxima tela você confere qual coluna vira qual campo antes de gravar."
+        apoio="Envie o arquivo. Na próxima etapa você confere como cada coluna será gravada antes de confirmar."
+      />
+      <EtapasImportacao
+        atual="arquivo"
+        obra={`${obra.codigo} · ${obra.nome}`}
       />
 
       <Cartao>
@@ -58,7 +63,9 @@ export default async function PaginaImportar({
                 </span>
                 <span className="min-w-0 flex-1 basis-full truncate text-[var(--tinta-forte)] sm:basis-auto">
                   {h.arquivo_nome}{" "}
-                  <span className="text-[var(--tinta-fraca)]">· aba {h.aba}</span>
+                  <span className="text-[var(--tinta-fraca)]">
+                    · aba {h.aba}
+                  </span>
                 </span>
                 <Etiqueta
                   tom={
@@ -71,14 +78,16 @@ export default async function PaginaImportar({
                 >
                   {h.status === "concluida"
                     ? `${h.importadas} de ${h.total_linhas}`
-                    : h.status}
+                    : h.status === "rascunho"
+                      ? "em conferência"
+                      : "cancelada"}
                 </Etiqueta>
-                {h.status === "rascunho" ? (
+                {h.status !== "cancelada" ? (
                   <Link
                     href={`/obras/${obraId}/importar/${h.id}`}
                     className="text-[var(--marca-terracotta)] hover:underline"
                   >
-                    continuar
+                    {h.status === "rascunho" ? "continuar" : "ver resultado"}
                   </Link>
                 ) : null}
               </li>

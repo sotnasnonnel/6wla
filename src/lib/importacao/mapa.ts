@@ -235,6 +235,29 @@ export type MapaColunas = z.infer<typeof mapaColunasSchema>;
 
 export type LinhaPlanilha = Record<string, unknown>;
 
+/**
+ * Chave reservada, gravada em cada linha lida, com o número da linha na
+ * planilha original (1 = primeira linha da aba). Não é coluna: fica fora dos
+ * extras e da amostra. Rascunhos antigos não a têm — ver `numeroDaLinha`.
+ */
+export const LINHA_ORIGEM = "__linha_planilha__";
+
+/**
+ * Número da linha na planilha, para o gestor achar o problema no arquivo.
+ * Rascunho gravado antes de `LINHA_ORIGEM` existir cai na posição da lista
+ * (1-based), que não conta cabeçalho nem linhas vazias — por isso o
+ * chamador deve dizer "item", não "linha", quando `exato` for falso.
+ */
+export function numeroDaLinha(
+  linha: LinhaPlanilha,
+  indice: number,
+): { numero: number; exato: boolean } {
+  const n = linha[LINHA_ORIGEM];
+  return typeof n === "number" && Number.isInteger(n) && n > 0
+    ? { numero: n, exato: true }
+    : { numero: indice + 1, exato: false };
+}
+
 /** Remove acentos (NFD + faixa de diacríticos combinantes). */
 function semAcento(valor: string): string {
   return valor.normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -414,16 +437,21 @@ const STATUS_APELIDOS: Array<[string[], Status]> = [
   ],
 ];
 
-/** Texto livre da planilha → status. Sem correspondência = `pendente`. */
-export function parseStatus(valor: unknown): Status {
+/** Texto livre da planilha → status, ou `null` se não reconhecer o texto. */
+export function reconheceStatus(valor: unknown): Status | null {
   const s = texto(valor);
-  if (!s) return "pendente";
+  if (!s) return null;
   const k = semAcento(s).toLowerCase().trim();
   if ((STATUS as readonly string[]).includes(k)) return k as Status;
   for (const [apelidos, status] of STATUS_APELIDOS) {
     if (apelidos.some((a) => k === a || k.startsWith(a))) return status;
   }
-  return "pendente";
+  return null;
+}
+
+/** Texto livre da planilha → status. Sem correspondência = `pendente`. */
+export function parseStatus(valor: unknown): Status {
+  return reconheceStatus(valor) ?? "pendente";
 }
 
 const PRIORIDADE_APELIDOS: Array<[string[], Prioridade]> = [
@@ -491,7 +519,7 @@ export function traduzLinha(
   const mapeadas = new Set(Object.values(mapa));
   const extras: Record<string, string> = {};
   for (const [coluna, valor] of Object.entries(linha)) {
-    if (mapeadas.has(coluna)) continue;
+    if (mapeadas.has(coluna) || coluna === LINHA_ORIGEM) continue;
     const v = texto(valor);
     if (v !== null) extras[coluna] = v;
   }
@@ -583,7 +611,8 @@ export function matrizParaLinhas(matriz: unknown[][]): {
   }
 
   const linhas: LinhaPlanilha[] = [];
-  for (const row of matriz.slice(idx + 1)) {
+  for (let r = idx + 1; r < matriz.length; r++) {
+    const row = matriz[r] ?? [];
     const obj: LinhaPlanilha = {};
     let vazia = true;
     cabecalhos.forEach((h, i) => {
@@ -593,7 +622,8 @@ export function matrizParaLinhas(matriz: unknown[][]): {
       // Guarda Date como ISO para serializar em JSON sem perder o dia.
       obj[h] = v instanceof Date ? parseData(v) : (t ?? null);
     });
-    if (!vazia) linhas.push(obj);
+    // A matriz é indexada pela linha da aba (0 = linha 1 do Excel).
+    if (!vazia) linhas.push({ ...obj, [LINHA_ORIGEM]: r + 1 });
   }
   return { cabecalhos, linhas };
 }

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
+  erroInterno,
   exigeGestor,
   exigeUsuario,
   falha,
@@ -12,17 +13,28 @@ import {
 } from "@/server/auth";
 import {
   CAMPOS_IMPORTAVEIS,
-  chaveCodigo,
   saneiaMapa,
   sugereMapa,
-  traduzLinha,
   type MapaColunas,
   type RestricaoImportada,
 } from "@/lib/importacao/mapa";
+import {
+  GRAVANDO,
+  planejaImportacao,
+  travaVigente,
+  type ModoImportacao,
+} from "@/lib/importacao/plano";
 import type { Json, TablesInsert, TablesUpdate } from "@/lib/database.types";
 import { lePlanilha } from "./leitor";
 import { iaDisponivel, sugereMapaComIA } from "./gemini";
-import { buscaImportacao, codigosDaObra } from "./queries";
+import {
+  buscaImportacao,
+  codigosDaObra,
+  gravadasDaImportacao,
+  resumoDoPlano,
+  type ItemRelatorio,
+  type ResumoImportacao,
+} from "./queries";
 
 const TAMANHO_MAXIMO = 15 * 1024 * 1024;
 
@@ -111,6 +123,9 @@ export async function resugereComIA(
   if (!imp) return falha("Importação não encontrada");
   await exigeGestor(imp.obra_id);
   if (imp.status !== "rascunho") return falha("Importação já concluída");
+  // Com linhas já gravadas o mapa fica fixo: é por ele que a retomada as reconhece.
+  if ((await gravadasDaImportacao(supabase, imp.obra_id, imp.id)).length > 0)
+    return falha("Parte desta planilha já foi gravada; o mapeamento não muda mais.");
 
   const ia = await sugereMapaComIA(imp.cabecalhos, imp.linhas);
   if (ia === null) return falha("IA não configurada (GEMINI_API_KEY)");
@@ -177,7 +192,41 @@ function soPreenchidos(
   return limpo as TablesUpdate<"6wla_restricoes">;
 }
 
-/** Etapa 2: gestor confirma o de-para e as linhas viram restrições. */
+const simulaSchema = z.object({
+  importacaoId: z.guid(),
+  mapa: z.record(z.string(), z.string()),
+  modo: z.enum(["adicionar", "atualizar"]),
+});
+
+/** Conferência: recalcula o resumo quando o gestor troca descrição/código/modo. */
+export async function simulaImportacao(
+  entrada: z.input<typeof simulaSchema>,
+): Promise<Resultado<ResumoImportacao>> {
+  const parsed = simulaSchema.safeParse(entrada);
+  if (!parsed.success) return falha("Dados inválidos");
+  const { supabase } = await exigeUsuario();
+  const imp = await buscaImportacao(supabase, parsed.data.importacaoId);
+  if (!imp) return falha("Importação não encontrada");
+  await exigeGestor(imp.obra_id);
+  if (imp.status !== "rascunho") return falha("Importação já concluída");
+  const mapa = saneiaMapa(parsed.data.mapa, imp.cabecalhos);
+  try {
+    return sucesso(await resumoDoPlano(supabase, imp, mapa, parsed.data.modo));
+  } catch (e) {
+    console.error("[importacao.simula]", e);
+    return falha("Não foi possível calcular o resumo agora.");
+  }
+}
+
+/**
+ * Etapa 2: gestor confirma o de-para e as linhas viram restrições.
+ *
+ * Pode ser repetida com segurança depois de uma falha parcial: o que esta
+ * importação já inseriu é reconhecido (código + descrição, ver
+ * `planejaImportacao`) e não entra de novo, e o mapa/modo da primeira
+ * tentativa passam a valer — com outro mapa as linhas não seriam
+ * reconhecidas.
+ */
 export async function confirmaImportacao(
   _estado: EstadoImportacao,
   form: FormData,
@@ -185,7 +234,8 @@ export async function confirmaImportacao(
   const id = z.guid().safeParse(form.get("importacaoId"));
   if (!id.success) return { erro: "Identificador inválido" };
   // Sem modo escolhido, o comportamento seguro é o que não mexe no que existe.
-  const modo = form.get("modo") === "atualizar" ? "atualizar" : "adicionar";
+  const modoPedido: ModoImportacao =
+    form.get("modo") === "atualizar" ? "atualizar" : "adicionar";
 
   const { supabase, perfil } = await exigeUsuario();
   const imp = await buscaImportacao(supabase, id.data);
@@ -194,12 +244,24 @@ export async function confirmaImportacao(
   if (imp.status !== "rascunho")
     return { erro: "Esta importação já foi processada" };
 
-  const bruto: Record<string, string> = {};
-  for (const campo of CAMPOS_IMPORTAVEIS) {
-    const v = form.get(`mapa.${campo}`);
-    if (typeof v === "string" && v.length > 0) bruto[campo] = v;
+  const caminho = `/obras/${imp.obra_id}/importar/${imp.id}`;
+  const gravadas = await gravadasDaImportacao(supabase, imp.obra_id, imp.id);
+
+  let mapa: MapaColunas;
+  let modo: ModoImportacao;
+  if (gravadas.length > 0) {
+    // Retomada: vale o que foi usado na primeira tentativa.
+    mapa = imp.mapa_colunas;
+    modo = imp.modo;
+  } else {
+    const bruto: Record<string, string> = {};
+    for (const campo of CAMPOS_IMPORTAVEIS) {
+      const v = form.get(`mapa.${campo}`);
+      if (typeof v === "string" && v.length > 0) bruto[campo] = v;
+    }
+    mapa = saneiaMapa(bruto, imp.cabecalhos);
+    modo = modoPedido;
   }
-  const mapa = saneiaMapa(bruto, imp.cabecalhos);
   if (!mapa.descricao)
     return { erro: "Escolha qual coluna é a descrição da restrição" };
   if (modo === "atualizar" && !mapa.codigo)
@@ -207,17 +269,72 @@ export async function confirmaImportacao(
       erro: "Para atualizar o que já existe, escolha a coluna do código: é por ele que a linha encontra a restrição.",
     };
 
-  const traduzidas = imp.linhas
-    .map((l) => traduzLinha(l, mapa))
-    .filter((r) => r.ok);
-  if (traduzidas.length === 0)
-    return { erro: "Nenhuma linha válida com esse mapeamento" };
+  // Trava contra dois envios simultâneos (duplo clique, duas abas):
+  // compare-and-swap na marca lida. Grava mapa e modo ANTES de inserir, para
+  // uma tentativa que morra no meio ainda deixar registrado com o que gravou.
+  const agora = Date.now();
+  if (travaVigente(imp.mapa_origem, agora))
+    return {
+      erro: "Esta importação já está sendo gravada. Aguarde alguns instantes e recarregue a página.",
+    };
+  const { data: travou, error: erroTrava } = await supabase
+    .from("6wla_importacoes")
+    .update({
+      mapa_origem: `${GRAVANDO}${agora}`,
+      mapa_colunas: mapa as Json,
+      modo,
+    })
+    .eq("id", imp.id)
+    .eq("status", "rascunho")
+    .eq("mapa_origem", imp.mapa_origem)
+    .select("id");
+  if (erroTrava) {
+    console.error("[importacao.confirma.trava]", erroTrava);
+    return { erro: "Não foi possível iniciar a gravação. Nada foi salvo." };
+  }
+  if (!travou || travou.length === 0)
+    return {
+      erro: "Esta importação mudou enquanto você conferia. Recarregue a página.",
+    };
+  const marca = `${GRAVANDO}${agora}`;
+
+  // O que foi lido antes da trava pode estar velho: outra tentativa pode ter
+  // gravado e soltado a trava nesse meio-tempo. Relê já com a trava na mão;
+  // se mudou, devolve mapa e modo anteriores e pede recarga.
+  const gravadasAgora = await gravadasDaImportacao(
+    supabase,
+    imp.obra_id,
+    imp.id,
+  );
+  if (gravadasAgora.length !== gravadas.length) {
+    await supabase
+      .from("6wla_importacoes")
+      .update({
+        mapa_origem: "manual",
+        mapa_colunas: imp.mapa_colunas as Json,
+        modo: imp.modo,
+      })
+      .eq("id", imp.id)
+      .eq("mapa_origem", marca);
+    return {
+      erro: "Esta importação mudou enquanto você conferia. Recarregue a página.",
+    };
+  }
+
+  const existentes = await codigosDaObra(supabase, imp.obra_id, imp.id);
+  const plano = planejaImportacao({
+    linhas: imp.linhas,
+    mapa,
+    modo,
+    existentes,
+    gravadas,
+  });
 
   // Casa responsável por e-mail com usuários existentes.
   const emails = [
     ...new Set(
-      traduzidas
-        .map((r) => r.restricao.responsavel_email)
+      [...plano.novas, ...plano.atualizar]
+        .map((l) => l.restricao.responsavel_email)
         .filter((e): e is string => !!e),
     ),
   ];
@@ -229,62 +346,43 @@ export async function confirmaImportacao(
       .in("email", emails);
     for (const p of perfis ?? []) porEmail.set(p.email.toLowerCase(), p.id);
   }
+  const responsavelDe = (r: RestricaoImportada): string | null =>
+    r.responsavel_email ? (porEmail.get(r.responsavel_email) ?? null) : null;
 
-  // O que já existe na obra, por código. Vale nos dois modos: em "adicionar"
-  // para pular, em "atualizar" para achar quem atualizar.
-  const existentes = await codigosDaObra(supabase, imp.obra_id);
-  const novosCodigos = new Set<string>();
-
-  const novas: TablesInsert<"6wla_restricoes">[] = [];
-  const alteracoes: Array<{ id: string; dados: TablesUpdate<"6wla_restricoes"> }> =
-    [];
-  let ignoradas = 0;
-
-  for (const { restricao: r } of traduzidas) {
-    const responsavelId = r.responsavel_email
-      ? (porEmail.get(r.responsavel_email) ?? null)
-      : null;
-    const chave = chaveCodigo(r.codigo);
-    const jaExiste = chave ? existentes.get(chave) : undefined;
-
-    if (jaExiste) {
-      if (modo === "adicionar") ignoradas += 1;
-      else
-        alteracoes.push({
-          id: jaExiste,
-          dados: {
-            ...soPreenchidos(camposDaLinha(r, responsavelId)),
-            importacao_id: imp.id,
-          },
-        });
-      continue;
-    }
-    // Código repetido dentro da própria planilha: a primeira linha manda, as
-    // seguintes são ruído de planilha, não restrições diferentes.
-    if (chave && novosCodigos.has(chave)) {
-      ignoradas += 1;
-      continue;
-    }
-    if (chave) novosCodigos.add(chave);
-
-    novas.push({
-      ...camposDaLinha(r, responsavelId),
+  const novas: TablesInsert<"6wla_restricoes">[] = plano.novas.map(
+    ({ restricao: r }) => ({
+      ...camposDaLinha(r, responsavelDe(r)),
       descricao: r.descricao,
       obra_id: imp.obra_id,
       ...(r.data_criacao ? { data_criacao: r.data_criacao } : {}),
       origem: "importada",
       importacao_id: imp.id,
       criado_por: perfil.id,
-    });
-  }
+    }),
+  );
+  // `importacao_id` não vai no update: o gatilho preserva o da origem.
+  const alteracoes = plano.atualizar.map(({ id: alvo, restricao: r }) => ({
+    id: alvo,
+    dados: soPreenchidos(camposDaLinha(r, responsavelDe(r))),
+  }));
+  const ignoradas = plano.ignoradas.length;
+  const jaGravadas = plano.jaGravadas;
 
-  /** Fecha (ou marca o estrago de) a importação e devolve o erro, se houver. */
+  /**
+   * Sucesso: conclui e troca as linhas brutas pelo relatório do que não
+   * entrou. Falha: continua rascunho (para a retomada), só solta a trava e
+   * guarda as contagens.
+   */
   const encerra = async (
     importadas: number,
     atualizadas: number,
     erro?: string,
   ): Promise<EstadoImportacao> => {
-    await supabase
+    const relatorio: ItemRelatorio[] = [
+      ...plano.descartadas.map((d) => ({ tipo: "descartada" as const, ...d })),
+      ...plano.ignoradas.map((d) => ({ tipo: "ignorada" as const, ...d })),
+    ].sort((a, b) => a.numero - b.numero);
+    const { error } = await supabase
       .from("6wla_importacoes")
       .update({
         ...(erro
@@ -294,29 +392,38 @@ export async function confirmaImportacao(
               concluido_em: new Date().toISOString(),
               // Linhas brutas já cumpriram o papel; não guardamos o arquivo.
               linhas: [],
+              relatorio: relatorio as Json,
             }),
-        modo,
         importadas,
         atualizadas,
         ignoradas,
-        mapa_colunas: mapa as Json,
         mapa_origem: "manual",
       })
-      .eq("id", imp.id);
-    return { erro };
+      .eq("id", imp.id)
+      .eq("status", "rascunho")
+      // Só solta a trava que é desta tentativa.
+      .eq("mapa_origem", marca);
+    if (error) console.error("[importacao.confirma.encerra]", error);
+    revalidatePath(caminho);
+    revalidatePath(`/obras/${imp.obra_id}/importar`);
+    revalidatePath(`/obras/${imp.obra_id}/tabela`);
+    revalidatePath(`/obras/${imp.obra_id}/indicadores`);
+    return erro ? { erro } : {};
   };
 
   let importadas = 0;
   for (let i = 0; i < novas.length; i += 200) {
     const lote = novas.slice(i, i + 200);
+    // Um insert é uma instrução só: o lote entra inteiro ou não entra.
     const { error } = await supabase.from("6wla_restricoes").insert(lote);
     if (error) {
       console.error("[importacao.confirma.insert]", error);
+      const total = jaGravadas + importadas;
       return encerra(
-        importadas,
+        total,
         0,
-        importadas > 0
-          ? `${importadas} restrição(ões) já foram gravadas e continuam no sistema. O lote seguinte falhou; confira o mapeamento e importe de novo apenas o que faltou — em "só adicionar as novas", as já gravadas são puladas pelo código.`
+        total > 0
+          ? `${total} restrição(ões) desta planilha já estão gravadas e continuam no sistema; ${novas.length - importadas} ainda faltam. Tente de novo: as já gravadas são reconhecidas e não se repetem.`
           : "Falha ao gravar a primeira leva de linhas. Nada foi salvo; confira o mapeamento e tente de novo.",
       );
     }
@@ -338,23 +445,17 @@ export async function confirmaImportacao(
     if (falhou?.error) {
       console.error("[importacao.confirma.update]", falhou.error);
       return encerra(
-        importadas,
+        jaGravadas + importadas,
         atualizadas,
-        `${importadas} adicionada(s) e ${atualizadas} atualizada(s) foram gravadas. A atualização parou no meio; repetir a importação em "atualizar" refaz o restante sem duplicar nada.`,
+        `${jaGravadas + importadas} adicionada(s) e ${atualizadas} atualizada(s) foram gravadas; ${alteracoes.length - atualizadas} atualização(ões) faltam. Tentar de novo refaz só a atualização, sem duplicar nada.`,
       );
     }
     atualizadas += lote.length;
   }
 
-  await encerra(importadas, atualizadas);
-
-  revalidatePath(`/obras/${imp.obra_id}/tabela`);
-  revalidatePath(`/obras/${imp.obra_id}/indicadores`);
-  redirect(
-    `/obras/${imp.obra_id}/tabela?importadas=${importadas}&atualizadas=${atualizadas}&ignoradas=${ignoradas}`,
-  );
+  await encerra(jaGravadas + importadas, atualizadas);
+  redirect(caminho);
 }
-
 export async function cancelaImportacao(
   importacaoId: string,
 ): Promise<Resultado> {
@@ -364,11 +465,22 @@ export async function cancelaImportacao(
   const imp = await buscaImportacao(supabase, id.data);
   if (!imp) return falha("Importação não encontrada");
   await exigeGestor(imp.obra_id);
-  await supabase
+  // Cancelar no meio de uma gravação deixaria metade gravada e a outra
+  // metade recusada pelo banco.
+  if (travaVigente(imp.mapa_origem))
+    return falha(
+      "Esta importação está sendo gravada. Aguarde terminar para cancelar.",
+    );
+  const { data, error } = await supabase
     .from("6wla_importacoes")
     .update({ status: "cancelada", linhas: [] })
     .eq("id", id.data)
-    .eq("status", "rascunho");
+    .eq("status", "rascunho")
+    .eq("mapa_origem", imp.mapa_origem)
+    .select("id");
+  if (error) return erroInterno("importacao.cancela", error);
+  if (data.length === 0)
+    return falha("Esta importação mudou. Recarregue a página.");
   revalidatePath(`/obras/${imp.obra_id}/importar`);
   return sucesso(undefined);
 }
