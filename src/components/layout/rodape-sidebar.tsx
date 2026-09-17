@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useFormStatus } from "react-dom";
 import { sair } from "@/app/login/actions";
 import { Icone, ItemRodape, useMenuColapsado } from "./sidebar";
+import { ContadorBolha, rotuloNaoLidas, useNaoLidas } from "./nao-lidas";
 
 /**
  * Rodapé da barra lateral: notificações (com contador ao vivo), atalho para a
@@ -14,51 +14,13 @@ import { Icone, ItemRodape, useMenuColapsado } from "./sidebar";
 export function RodapeSidebar({
   nome,
   papel,
-  naoLidas,
-  userId,
 }: {
   nome: string;
   /** Rótulo do papel ("Administrador geral", "Gestor"...). */
   papel: string;
-  naoLidas: number;
-  userId: string;
 }) {
   const colapsada = useMenuColapsado();
-  const [total, setTotal] = useState(naoLidas);
-  const [ultimo, setUltimo] = useState(naoLidas);
-  // O servidor manda um valor novo a cada navegação; ele vence o estado local.
-  if (naoLidas !== ultimo) {
-    setUltimo(naoLidas);
-    setTotal(naoLidas);
-  }
-
-  useEffect(() => {
-    const supabase = createClient();
-    const recontar = async () => {
-      const { count } = await supabase
-        .from("6wla_notificacoes")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .is("lida_em", null);
-      if (typeof count === "number") setTotal(count);
-    };
-    const canal = supabase
-      .channel(`notificacoes:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "6wla_notificacoes",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => void recontar(),
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(canal);
-    };
-  }, [userId]);
+  const total = useNaoLidas();
 
   const iniciais = nome
     .split(/\s+/)
@@ -72,15 +34,12 @@ export function RodapeSidebar({
       <div className="px-2 pt-2">
         <ItemRodape
           href="/notificacoes"
-          titulo={`Notificações: ${total} não lidas`}
+          titulo={rotuloNaoLidas(total)}
+          rotuloAcessivel={rotuloNaoLidas(total)}
         >
           <span className="relative shrink-0">
             <Icone nome="sino" />
-            {total > 0 ? (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] rounded-full bg-[var(--marca-terracotta)] px-1 text-center text-[10px] leading-4 font-bold text-white">
-                {total > 99 ? "99+" : total}
-              </span>
-            ) : null}
+            <ContadorBolha total={total} />
           </span>
           <span className={`truncate ${colapsada ? "md:hidden" : ""}`}>
             Notificações
@@ -95,12 +54,14 @@ export function RodapeSidebar({
         <Link
           href="/conta"
           title={`${nome} · Sua conta`}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--marca-terracotta)] text-[0.8rem] font-bold text-white transition hover:bg-[var(--marca-terracotta-escuro)]"
+          aria-label={`${nome} · Sua conta`}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--marca-terracotta)] text-[0.8rem] font-bold text-white transition hover:bg-[var(--marca-terracotta-escuro)]"
         >
           {iniciais || "?"}
         </Link>
         <Link
           href="/conta"
+          tabIndex={-1}
           className={`min-w-0 flex-1 ${colapsada ? "md:hidden" : ""}`}
         >
           <strong className="block truncate text-[0.78rem] font-semibold text-[#1e293b]">
@@ -111,16 +72,24 @@ export function RodapeSidebar({
           </span>
         </Link>
         <form action={sair}>
-          <button
-            type="submit"
-            title="Sair"
-            aria-label="Sair"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--tinta-fraca)] transition hover:bg-[var(--perigo-fundo)] hover:text-[var(--perigo)]"
-          >
-            <Icone nome="sair" tamanho={16} />
-          </button>
+          <BotaoSair />
         </form>
       </div>
     </div>
+  );
+}
+
+function BotaoSair() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      title="Sair"
+      aria-label={pending ? "Saindo…" : "Sair"}
+      disabled={pending}
+      className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-[var(--tinta-fraca)] transition hover:bg-[var(--perigo-fundo)] hover:text-[var(--perigo-tinta)] disabled:opacity-60"
+    >
+      <Icone nome="sair" tamanho={18} />
+    </button>
   );
 }

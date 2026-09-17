@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
-  getSortedRowModel,
   useReactTable,
   type SortingState,
   type VisibilityState,
@@ -29,8 +28,18 @@ import {
   formataData,
   formataNumero,
   hojeIso,
-  type Status,
 } from "@/lib/restricoes/dominio";
+import {
+  FILTROS_PADRAO,
+  RESP_SEM,
+  caminhoDetalhe,
+  contaFiltros,
+  filtraRestricoes,
+  ordenaRestricoes,
+  serializaFiltros,
+  type FiltroStatus,
+  type FiltrosGrade,
+} from "@/lib/restricoes/filtros";
 import { CelulaEditavel } from "./celula";
 import { CartoesRestricoes } from "./cartoes";
 import { TOM_PRIORIDADE, TOM_STATUS } from "./tons";
@@ -58,7 +67,24 @@ type Props = {
   restricoes: Restricao[];
   membros: Membro[];
   papel: "gestor" | "membro";
+  /** Recorte lido da URL pela página: voltar do detalhe mantém a lista. */
+  filtrosIniciais?: FiltrosGrade;
 };
+
+/** Nº e Restrição ficam presos à esquerda ao rolar para os lados. */
+const FIXAS = ["numero", "descricao"];
+
+// Tempo do destaque de linha alterada por outra pessoa. Conta desde o aviso
+// do Realtime, e o dado novo ainda precisa vir do servidor: por isso um pouco
+// mais que o piscar de olhos de 1,5 s.
+const DESTAQUE_MS = 2500;
+
+/** Id da linha num aviso do Realtime (`new` vem vazio num DELETE). */
+function idDoAviso(registro: unknown): string | null {
+  if (typeof registro !== "object" || registro === null) return null;
+  if (!("id" in registro)) return null;
+  return typeof registro.id === "string" ? registro.id : null;
+}
 
 const ajuda = createColumnHelper<Restricao>();
 
@@ -68,8 +94,15 @@ export function GradeRestricoes({
   restricoes,
   membros,
   papel,
+  filtrosIniciais = FILTROS_PADRAO,
 }: Props) {
   const router = useRouter();
+  // Lista atual para quem guarda edições: as colunas são memorizadas e o
+  // `salvar` delas enxergaria a lista de quando foram criadas.
+  const restricoesAtuais = useRef(restricoes);
+  useEffect(() => {
+    restricoesAtuais.current = restricoes;
+  }, [restricoes]);
   /**
    * Resultado das edições locais, guardado junto da lista que o servidor
    * mandou quando elas aconteceram. Chegou lista nova (Realtime, refresh,
@@ -85,19 +118,28 @@ export function GradeRestricoes({
     () => (edicoes.fonte === restricoes ? edicoes.mapa : {}),
     [edicoes, restricoes],
   );
-  const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState<
-    "abertas" | "todas" | Status
-  >("abertas");
-  const [filtroResp, setFiltroResp] = useState("");
-  const [soAtrasadas, setSoAtrasadas] = useState(false);
-  const [ordenacao, setOrdenacao] = useState<SortingState>([
-    { id: "numero", desc: true },
-  ]);
+  const [busca, setBusca] = useState(filtrosIniciais.busca);
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>(
+    filtrosIniciais.status,
+  );
+  const [filtroResp, setFiltroResp] = useState(filtrosIniciais.resp);
+  const [soAtrasadas, setSoAtrasadas] = useState(filtrosIniciais.atrasadas);
+  const [ordenacao, setOrdenacao] = useState<SortingState>(() =>
+    filtrosIniciais.ordem ? [filtrosIniciais.ordem] : [],
+  );
   const [visiveis, setVisiveis] = useState<VisibilityState>(
     COLUNAS_OCULTAS_PADRAO,
   );
   const [menuColunas, setMenuColunas] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const botaoColunas = useRef<HTMLButtonElement>(null);
+  const [anuncio, setAnuncio] = useState("");
+  const [destacadas, setDestacadas] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  // Linhas que eu mesmo acabei de salvar: o Realtime avisa delas também, e
+  // não faz sentido destacar a minha própria edição.
+  const meusSalvos = useRef(new Map<string, number>());
   const [modalAberto, setModalAberto] = useState(false);
   // No celular os filtros ficam recolhidos: a busca resolve a maioria dos
   // casos e a lista começa mais perto do topo da tela.
@@ -107,6 +149,7 @@ export function GradeRestricoes({
   // Outros usuários editando a mesma obra: recarrega os dados do servidor.
   useEffect(() => {
     const supabase = createClient();
+    const timers = new Set<ReturnType<typeof setTimeout>>();
     const canal = supabase
       .channel(`restricoes:${obraId}`)
       .on(
@@ -117,62 +160,99 @@ export function GradeRestricoes({
           table: "6wla_restricoes",
           filter: `obra_id=eq.${obraId}`,
         },
-        () => router.refresh(),
+        (aviso) => {
+          const id = idDoAviso(aviso.new);
+          const meu = id ? meusSalvos.current.get(id) : undefined;
+          if (id && !(meu && Date.now() - meu < 5000)) {
+            setDestacadas((atual) => new Set(atual).add(id));
+            const t = setTimeout(() => {
+              timers.delete(t);
+              setDestacadas((atual) => {
+                const novo = new Set(atual);
+                novo.delete(id);
+                return novo;
+              });
+            }, DESTAQUE_MS);
+            timers.add(t);
+          }
+          router.refresh();
+        },
       )
       .subscribe();
     return () => {
+      for (const t of timers) clearTimeout(t);
       void supabase.removeChannel(canal);
     };
   }, [obraId, router]);
+
+  // Recorte na URL: recarregar ou voltar do detalhe devolve a mesma lista.
+  // `history.replaceState` (integrado ao roteador do Next) não refaz a busca
+  // no servidor a cada tecla, como faria `router.replace`.
+  const ordem = ordenacao[0] ?? null;
+  const qs = serializaFiltros({
+    busca,
+    status: filtroStatus,
+    resp: filtroResp,
+    atrasadas: soAtrasadas,
+    ordem: ordem ? { id: ordem.id, desc: ordem.desc } : null,
+  });
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const alvo = qs ? `?${qs}` : "";
+      if (window.location.search === alvo) return;
+      window.history.replaceState(null, "", alvo || window.location.pathname);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [qs]);
+
+  // Menu de colunas: Esc e clique fora fecham.
+  useEffect(() => {
+    if (!menuColunas) return;
+    const fora = (ev: PointerEvent) => {
+      if (ev.target instanceof Node && menuRef.current?.contains(ev.target))
+        return;
+      setMenuColunas(false);
+    };
+    const tecla = (ev: globalThis.KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      setMenuColunas(false);
+      botaoColunas.current?.focus();
+    };
+    document.addEventListener("pointerdown", fora);
+    document.addEventListener("keydown", tecla);
+    return () => {
+      document.removeEventListener("pointerdown", fora);
+      document.removeEventListener("keydown", tecla);
+    };
+  }, [menuColunas]);
 
   const nomePorId = useMemo(
     () => new Map(membros.map((m) => [m.id, m.nome])),
     [membros],
   );
 
+  // Filtro e ordenação são as mesmas funções que o detalhe usa para o
+  // anterior/próxima: as duas telas concordam sobre a ordem da lista.
+  const ordemId = ordem?.id;
+  const ordemDesc = ordem?.desc;
   const dados = useMemo(() => {
     const linhas = restricoes.map((r) => sobrescritas[r.id] ?? r);
-    const termo = busca.trim().toLowerCase();
-    return linhas.filter((r) => {
-      if (
-        filtroStatus === "abertas" &&
-        !(r.status === "pendente" || r.status === "em_andamento")
-      )
-        return false;
-      if (
-        filtroStatus !== "abertas" &&
-        filtroStatus !== "todas" &&
-        r.status !== filtroStatus
-      )
-        return false;
-      if (soAtrasadas && !estaAtrasada(r, hoje)) return false;
-      if (filtroResp) {
-        const nome = r.responsavel_id
-          ? nomePorId.get(r.responsavel_id)
-          : r.responsavel_nome;
-        if (filtroResp === "__sem__" ? !!nome : nome !== filtroResp)
-          return false;
-      }
-      if (termo) {
-        const alvo = [
-          r.descricao,
-          r.acao,
-          r.codigo,
-          r.responsavel_nome,
-          r.setor,
-          r.area,
-          r.atividade_impactada,
-          r.classificacao,
-          r.causa_6m,
-          formataNumero(r.numero),
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        if (!alvo.includes(termo)) return false;
-      }
-      return true;
-    });
+    const filtradas = filtraRestricoes(
+      linhas,
+      {
+        busca,
+        status: filtroStatus,
+        resp: filtroResp,
+        atrasadas: soAtrasadas,
+        ordem: null,
+      },
+      { nomePorId, hoje },
+    );
+    return ordenaRestricoes(
+      filtradas,
+      ordemId === undefined ? null : { id: ordemId, desc: ordemDesc === true },
+      nomePorId,
+    );
   }, [
     restricoes,
     sobrescritas,
@@ -182,6 +262,8 @@ export function GradeRestricoes({
     soAtrasadas,
     hoje,
     nomePorId,
+    ordemId,
+    ordemDesc,
   ]);
 
   const responsaveis = useMemo(() => {
@@ -197,15 +279,19 @@ export function GradeRestricoes({
 
   const salvar =
     (r: Restricao, campo: keyof RestricaoEditavel) => async (valor: string) => {
+      meusSalvos.current.set(r.id, Date.now());
       const res = await atualizaCampo({ restricaoId: r.id, campo, valor });
       if (!res.ok) return res.erro;
+      meusSalvos.current.set(r.id, Date.now());
+      const fonte = restricoesAtuais.current;
       setEdicoes((atual) => ({
-        fonte: restricoes,
+        fonte,
         mapa: {
-          ...(atual.fonte === restricoes ? atual.mapa : {}),
+          ...(atual.fonte === fonte ? atual.mapa : {}),
           [res.dados.id]: res.dados,
         },
       }));
+      setAnuncio(`${formataNumero(r.numero)}: salvo.`);
       return null;
     };
 
@@ -252,9 +338,10 @@ export function GradeRestricoes({
       ajuda.accessor("numero", {
         header: "Nº",
         size: 70,
+        enableHiding: false,
         cell: ({ row }) => (
           <Link
-            href={`/obras/${obraId}/restricoes/${row.original.id}`}
+            href={caminhoDetalhe(obraId, row.original.id, qs)}
             className="block px-2 py-1 font-mono text-xs font-semibold text-[var(--marca-terracotta)] hover:underline"
             title="Abrir detalhes e chat"
           >
@@ -301,7 +388,7 @@ export function GradeRestricoes({
           />
         ),
       }),
-      textoCol("descricao", "Restrição", 340),
+      { ...textoCol("descricao", "Restrição", 340), enableHiding: false },
       textoCol("acao", "Ação", 260),
       ajuda.accessor((r) => r.responsavel_id ?? "", {
         id: "responsavel",
@@ -432,18 +519,25 @@ export function GradeRestricoes({
       }),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [obraId, membros, nomePorId, hoje, papel],
+    [obraId, membros, nomePorId, hoje, papel, qs],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 não é compatível com o React Compiler; o hook decide sozinho.
   const tabela = useReactTable({
     data: dados,
     columns: colunas,
-    state: { sorting: ordenacao, columnVisibility: visiveis },
+    state: {
+      sorting: ordenacao,
+      columnVisibility: visiveis,
+      columnPinning: { left: FIXAS, right: [] },
+    },
     onSortingChange: setOrdenacao,
     onColumnVisibilityChange: setVisiveis,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    // A ordem já vem aplicada em `dados` (ver `ordenaRestricoes`); a tabela
+    // só guarda qual coluna está marcada. Uma coluna por vez, como na URL.
+    manualSorting: true,
+    enableMultiSort: false,
     columnResizeMode: "onChange",
   });
 
@@ -480,18 +574,62 @@ export function GradeRestricoes({
     estaAtrasada(sobrescritas[r.id] ?? r, hoje),
   ).length;
 
-  const filtrosAtivos =
-    (filtroStatus !== "abertas" ? 1 : 0) +
-    (filtroResp ? 1 : 0) +
-    (soAtrasadas ? 1 : 0);
+  const filtrosAtivos = contaFiltros({
+    ...FILTROS_PADRAO,
+    status: filtroStatus,
+    resp: filtroResp,
+    atrasadas: soAtrasadas,
+  });
+
+  const chips: Array<{ chave: string; rotulo: string; limpa: () => void }> = [];
+  if (busca.trim())
+    chips.push({
+      chave: "q",
+      rotulo: `Busca: “${busca.trim()}”`,
+      limpa: () => setBusca(""),
+    });
+  if (filtroStatus !== "abertas")
+    chips.push({
+      chave: "status",
+      rotulo: `Status: ${filtroStatus === "todas" ? "todas" : STATUS_ROTULO[filtroStatus]}`,
+      limpa: () => setFiltroStatus(FILTROS_PADRAO.status),
+    });
+  if (filtroResp)
+    chips.push({
+      chave: "resp",
+      rotulo:
+        filtroResp === RESP_SEM
+          ? "Sem responsável"
+          : `Responsável: ${filtroResp}`,
+      limpa: () => setFiltroResp(""),
+    });
+  if (soAtrasadas)
+    chips.push({
+      chave: "atrasadas",
+      rotulo: "Só atrasadas",
+      limpa: () => setSoAtrasadas(false),
+    });
+
+  const limparFiltros = () => {
+    setBusca(FILTROS_PADRAO.busca);
+    setFiltroStatus(FILTROS_PADRAO.status);
+    setFiltroResp(FILTROS_PADRAO.resp);
+    setSoAtrasadas(FILTROS_PADRAO.atrasadas);
+  };
 
   return (
     <div className="space-y-2">
+      <p role="status" className="sr-only">
+        {anuncio}
+      </p>
       <div className="flex flex-wrap items-center gap-2">
         <input
+          type="search"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar…"
+          aria-label="Buscar restrições"
+          maxLength={200}
           className="min-w-0 flex-1 rounded-lg border border-[var(--borda)] px-2.5 py-2 text-sm focus:border-[var(--marca-terracotta)] focus:outline-none sm:w-56 sm:flex-none sm:py-1.5"
         />
 
@@ -557,9 +695,8 @@ export function GradeRestricoes({
         >
           <select
             value={filtroStatus}
-            onChange={(e) =>
-              setFiltroStatus(e.target.value as typeof filtroStatus)
-            }
+            aria-label="Filtrar por status"
+            onChange={(e) => setFiltroStatus(e.target.value as FiltroStatus)}
             className="w-full rounded-lg border border-[var(--borda)] bg-white px-2 py-2 text-base sm:w-auto sm:py-1.5 sm:text-sm"
           >
             <option value="abertas">Abertas</option>
@@ -572,11 +709,18 @@ export function GradeRestricoes({
           </select>
           <select
             value={filtroResp}
+            aria-label="Filtrar por responsável"
             onChange={(e) => setFiltroResp(e.target.value)}
             className="w-full rounded-lg border border-[var(--borda)] bg-white px-2 py-2 text-base sm:w-auto sm:max-w-56 sm:py-1.5 sm:text-sm"
           >
             <option value="">Todos os responsáveis</option>
-            <option value="__sem__">Sem responsável</option>
+            <option value={RESP_SEM}>Sem responsável</option>
+            {/* Filtro vindo de link antigo, de alguém que saiu da lista. */}
+            {filtroResp &&
+            filtroResp !== RESP_SEM &&
+            !responsaveis.includes(filtroResp) ? (
+              <option value={filtroResp}>{filtroResp}</option>
+            ) : null}
             {responsaveis.map((n) => (
               <option key={n} value={n}>
                 {n}
@@ -597,38 +741,86 @@ export function GradeRestricoes({
           </label>
 
           {/* Escolher colunas só faz sentido onde existe tabela. */}
-          <div className="relative hidden md:block">
+          <div ref={menuRef} className="relative hidden md:block">
             <button
+              ref={botaoColunas}
               type="button"
               onClick={() => setMenuColunas((v) => !v)}
+              aria-expanded={menuColunas}
+              aria-controls="menu-colunas"
               className="rounded-lg border border-[var(--borda)] bg-white px-2.5 py-1.5 text-sm hover:bg-[var(--marca-gelo)]"
             >
               Colunas
             </button>
             {menuColunas ? (
-              <div className="absolute right-0 z-30 mt-1 max-h-80 w-56 overflow-auto rounded-lg border border-[var(--borda)] bg-white p-2 shadow-lg">
-                {tabela.getAllLeafColumns().map((c) => (
-                  <label
-                    key={c.id}
-                    className="flex items-center gap-2 px-1 py-0.5 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={c.getIsVisible()}
-                      onChange={c.getToggleVisibilityHandler()}
-                    />
-                    {typeof c.columnDef.header === "string"
-                      ? c.columnDef.header
-                      : c.id}
-                  </label>
-                ))}
+              <div
+                id="menu-colunas"
+                role="group"
+                aria-label="Colunas visíveis"
+                className="absolute right-0 z-30 mt-1 w-56 rounded-lg border border-[var(--borda)] bg-white p-2 shadow-lg"
+              >
+                <div className="rolagem-fina max-h-72 overflow-auto">
+                  {tabela.getAllLeafColumns().map((c) => (
+                    <label
+                      key={c.id}
+                      className={`flex items-center gap-2 px-1 py-0.5 text-sm ${c.getCanHide() ? "" : "text-[var(--tinta-fraca)]"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={c.getIsVisible()}
+                        disabled={!c.getCanHide()}
+                        onChange={c.getToggleVisibilityHandler()}
+                      />
+                      {typeof c.columnDef.header === "string"
+                        ? c.columnDef.header
+                        : c.id}
+                    </label>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setVisiveis(COLUNAS_OCULTAS_PADRAO)}
+                  className="mt-2 w-full border-t border-[var(--grade)] px-1 pt-2 text-left text-xs font-semibold text-[var(--marca-terracotta)] hover:underline"
+                >
+                  Restaurar padrão
+                </button>
               </div>
             ) : null}
           </div>
-          <span className="text-xs text-[var(--tinta-fraca)]">
-            {dados.length} de {restricoes.length}
-          </span>
         </div>
+      </div>
+
+      {/* Recorte ativo e contagem ficam sempre à vista, inclusive no celular
+          com os filtros recolhidos. */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {chips.map((c) => (
+          <span
+            key={c.chave}
+            className="inline-flex max-w-full items-center rounded-full bg-[var(--marca-gelo)] pl-2.5 text-xs font-medium text-[var(--tinta-media)]"
+          >
+            <span className="truncate">{c.rotulo}</span>
+            <button
+              type="button"
+              onClick={c.limpa}
+              aria-label={`Remover filtro ${c.rotulo}`}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm hover:text-[var(--tinta-forte)]"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        {chips.length > 0 ? (
+          <button
+            type="button"
+            onClick={limparFiltros}
+            className="min-h-8 rounded-lg px-2 text-xs font-semibold text-[var(--marca-terracotta)] hover:underline"
+          >
+            Limpar filtros
+          </button>
+        ) : null}
+        <span className="ml-auto text-xs text-[var(--tinta-fraca)] tabular-nums">
+          {dados.length} de {restricoes.length}
+        </span>
       </div>
 
       <ModalNovaRestricao
@@ -642,6 +834,7 @@ export function GradeRestricoes({
       <div className="md:hidden">
         <CartoesRestricoes
           obraId={obraId}
+          qs={qs}
           restricoes={tabela.getRowModel().rows.map((l) => l.original)}
           nomePorId={nomePorId}
           hoje={hoje}
@@ -656,64 +849,92 @@ export function GradeRestricoes({
           className="border-separate border-spacing-0 text-sm"
           style={{ width: tabela.getTotalSize() }}
         >
-          <thead className="sticky top-0 z-10 bg-[var(--plano)]">
+          <thead>
             {tabela.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
-                {hg.headers.map((h) => (
-                  <th
-                    key={h.id}
-                    style={{ width: h.getSize() }}
-                    aria-sort={
-                      h.column.getIsSorted() === "asc"
-                        ? "ascending"
-                        : h.column.getIsSorted() === "desc"
-                          ? "descending"
-                          : "none"
-                    }
-                    className="relative border-b border-r border-[var(--borda)] px-2.5 py-2.5 text-left text-[0.72rem] font-bold uppercase tracking-[0.05em] text-[var(--tinta-media)] select-none"
-                  >
-                    <button
-                      type="button"
-                      onClick={h.column.getToggleSortingHandler()}
-                      className="flex w-full items-center gap-1"
+                {hg.headers.map((h) => {
+                  const fixa = h.column.getIsPinned() === "left";
+                  return (
+                    <th
+                      key={h.id}
+                      style={{
+                        width: h.getSize(),
+                        left: fixa ? h.column.getStart("left") : undefined,
+                      }}
+                      aria-sort={
+                        h.column.getIsSorted() === "asc"
+                          ? "ascending"
+                          : h.column.getIsSorted() === "desc"
+                            ? "descending"
+                            : "none"
+                      }
+                      className={`sticky top-0 border-b border-r border-[var(--borda)] bg-[var(--plano)] px-2.5 py-2.5 text-left text-[0.72rem] font-bold uppercase tracking-[0.05em] text-[var(--tinta-media)] select-none ${fixa ? "z-20" : "z-10"} ${fixa && h.column.getIsLastColumn("left") ? "shadow-[4px_0_6px_-4px_rgba(15,23,42,0.18)]" : ""}`}
                     >
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                      {h.column.getIsSorted() === "asc"
-                        ? "▲"
-                        : h.column.getIsSorted() === "desc"
-                          ? "▼"
-                          : ""}
-                    </button>
-                    <div
-                      onMouseDown={h.getResizeHandler()}
-                      onTouchStart={h.getResizeHandler()}
-                      className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-[var(--marca-terracotta)]"
-                    />
-                  </th>
-                ))}
+                      <button
+                        type="button"
+                        onClick={h.column.getToggleSortingHandler()}
+                        className="flex w-full items-center gap-1"
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {h.column.getIsSorted() === "asc"
+                          ? "▲"
+                          : h.column.getIsSorted() === "desc"
+                            ? "▼"
+                            : ""}
+                      </button>
+                      <div
+                        onMouseDown={h.getResizeHandler()}
+                        onTouchStart={h.getResizeHandler()}
+                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-[var(--marca-terracotta)]"
+                      />
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>
           <tbody>
             {tabela.getRowModel().rows.map((row) => {
               const atrasada = estaAtrasada(row.original, hoje);
+              const destacada = destacadas.has(row.original.id);
               return (
                 <tr
                   key={row.id}
-                  className={`${atrasada ? "bg-[var(--marca-brand-50)]" : "odd:bg-white even:bg-[#fcfcfd]"} hover:bg-[var(--plano)]`}
+                  data-destacada={destacada || undefined}
+                  className={`transition-colors duration-700 ${
+                    destacada
+                      ? "bg-[var(--aviso-fundo)]"
+                      : atrasada
+                        ? "bg-[var(--marca-brand-50)]"
+                        : "odd:bg-white even:bg-[#fcfcfd]"
+                  } hover:bg-[var(--plano)]`}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      style={{ width: cell.column.getSize() }}
-                      className="border-b border-r border-[var(--grade)] p-0 align-top"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const fixa = cell.column.getIsPinned() === "left";
+                    return (
+                      <td
+                        key={cell.id}
+                        style={{
+                          width: cell.column.getSize(),
+                          left: fixa ? cell.column.getStart("left") : undefined,
+                        }}
+                        // Coluna fixa herda o fundo da linha para cobrir o
+                        // que passa por baixo ao rolar.
+                        className={`border-b border-r border-[var(--grade)] p-0 align-top ${
+                          fixa ? "sticky z-[5] bg-inherit" : ""
+                        } ${
+                          fixa && cell.column.getIsLastColumn("left")
+                            ? "shadow-[4px_0_6px_-4px_rgba(15,23,42,0.18)]"
+                            : ""
+                        }`}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}

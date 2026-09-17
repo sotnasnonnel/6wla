@@ -31,8 +31,69 @@ export function Detalhamento({
 
   return (
     <div>
+      {/* Celular: cartões. Onze colunas não cabem em 360px sem virar rolagem
+          dupla; o cartão mostra o mesmo conteúdo, em leitura vertical. */}
+      <ul className="space-y-2 md:hidden">
+        {visiveis.map((r) => {
+          const s = situacaoDe(r, hoje);
+          const resolucao = tempoResolucao(r);
+          const atraso = tempoAtraso(r, hoje);
+          return (
+            <li
+              key={r.id}
+              className="rounded-lg border border-[var(--borda)] p-2.5 text-xs"
+              style={{ borderLeftWidth: 4, borderLeftColor: SITUACAO_COR[s] }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <Link
+                  href={`/obras/${r.obra_id}/restricoes/${r.id}`}
+                  className="font-mono font-semibold text-[var(--marca-terracotta)] hover:underline"
+                >
+                  {formataNumero(r.numero)}
+                </Link>
+                <span className="text-[var(--tinta-media)]">
+                  {SITUACAO_ROTULO[s]}
+                </span>
+              </div>
+              <p className="mt-1 text-sm break-words text-[var(--tinta-forte)]">
+                {r.descricao}
+              </p>
+              {r.acao ? (
+                <p className="mt-0.5 break-words text-[var(--tinta-media)]">
+                  Ação: {r.acao}
+                </p>
+              ) : null}
+              <dl className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[var(--tinta-media)]">
+                <Dado rotulo="Responsável" valor={r.responsavel} />
+                <Dado rotulo="Prazo" valor={formataData(r.data_limite)} />
+                <Dado rotulo="Previsão" valor={formataData(r.previsao_conclusao)} />
+                <Dado rotulo="Conclusão" valor={formataData(r.data_conclusao)} />
+                <Dado
+                  rotulo="Resolução"
+                  valor={resolucao !== null ? `${resolucao} dias` : null}
+                />
+                <Dado
+                  rotulo="Atraso"
+                  valor={atraso !== null ? `${atraso} dias` : null}
+                />
+                {r.atividade_impactada ? (
+                  <div className="col-span-2">
+                    <Dado rotulo="Atividade" valor={r.atividade_impactada} />
+                  </div>
+                ) : null}
+              </dl>
+            </li>
+          );
+        })}
+        {linhas.length === 0 ? (
+          <li className="px-3 py-8 text-center text-xs text-[var(--tinta-fraca)]">
+            Nenhuma restrição com os filtros atuais.
+          </li>
+        ) : null}
+      </ul>
+
       <div
-        className="-mx-2.5 overflow-auto border-y border-[var(--borda)] sm:mx-0 sm:rounded-lg sm:border"
+        className="hidden overflow-auto rounded-lg border border-[var(--borda)] md:block"
         style={{ maxHeight: 420 }}
       >
         <table className="w-full border-separate border-spacing-0 text-xs">
@@ -48,8 +109,8 @@ export function Detalhamento({
                 "Restrição",
                 "Ação",
                 "Situação",
-                "Resolução",
-                "Atraso",
+                "Resolução (dias)",
+                "Atraso (dias)",
               ].map((h) => (
                 <th
                   key={h}
@@ -145,12 +206,23 @@ export function Detalhamento({
       {mostrando < linhas.length ? (
         <button
           type="button"
-          onClick={() => setMostrando((m) => m + PAGINA * 4)}
-          className="mt-2 w-full rounded-lg border border-[var(--borda)] bg-white py-1.5 text-xs font-medium text-[var(--tinta-media)] hover:bg-[var(--marca-gelo)]"
+          onClick={() => setMostrando((m) => m + PAGINA)}
+          className="mt-2 min-h-10 w-full rounded-lg border border-[var(--borda)] bg-white py-1.5 text-xs font-medium text-[var(--tinta-media)] hover:bg-[var(--marca-gelo)] sm:min-h-8"
         >
-          Mostrar mais ({linhas.length - mostrando} restantes)
+          Mostrar mais {Math.min(PAGINA, linhas.length - mostrando)} (
+          {linhas.length - mostrando} restantes)
         </button>
       ) : null}
+    </div>
+  );
+}
+
+/** Par rótulo/valor do cartão; ausência de dado aparece como "—", não some. */
+function Dado({ rotulo, valor }: { rotulo: string; valor: string | null }) {
+  return (
+    <div className="min-w-0">
+      <dt className="inline text-[var(--tinta-fraca)]">{rotulo}: </dt>
+      <dd className="inline break-words">{valor || "—"}</dd>
     </div>
   );
 }

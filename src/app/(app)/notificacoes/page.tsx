@@ -1,25 +1,43 @@
 import Link from "next/link";
+import { z } from "zod";
 import { exigeUsuario } from "@/server/auth";
-import { listaNotificacoes } from "@/server/notificacoes/queries";
 import {
-  marcaLidaForm,
-  marcaTodasLidasForm,
-} from "@/server/notificacoes/actions";
+  contaNaoLidas,
+  listaNotificacoes,
+  MAXIMO_NOTIFICACOES,
+  PAGINA_NOTIFICACOES,
+} from "@/server/notificacoes/queries";
 import { CabecalhoPagina, Vazio } from "@/components/ui/basicos";
+import {
+  FormMarcarTodas,
+  ItemNotificacao,
+} from "@/components/notificacoes/item";
 import { formataDataHora, formataNumero } from "@/lib/restricoes/dominio";
 
 export const dynamic = "force-dynamic";
 
-const TEXTO = {
-  mencao: "mencionou você em",
-  atribuicao: "atribuiu a você",
-  comentario: "comentou em",
-} as const;
+/** `?limite=` cresce de página em página com "Carregar mais"; valor ruim volta ao padrão. */
+const parametrosSchema = z.object({
+  limite: z.coerce
+    .number()
+    .int()
+    .min(PAGINA_NOTIFICACOES)
+    .max(MAXIMO_NOTIFICACOES)
+    .catch(PAGINA_NOTIFICACOES),
+});
 
-export default async function PaginaNotificacoes() {
+export default async function PaginaNotificacoes({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { limite } = parametrosSchema.parse(await searchParams);
   const { perfil, supabase } = await exigeUsuario();
-  const notificacoes = await listaNotificacoes(supabase, perfil.id);
-  const naoLidas = notificacoes.filter((n) => !n.lida_em).length;
+  const [{ itens, temMais }, naoLidas] = await Promise.all([
+    listaNotificacoes(supabase, perfil.id, limite),
+    contaNaoLidas(supabase, perfil.id),
+  ]);
+  const proximo = Math.min(limite + PAGINA_NOTIFICACOES, MAXIMO_NOTIFICACOES);
 
   return (
     <div className="max-w-3xl space-y-4">
@@ -30,74 +48,56 @@ export default async function PaginaNotificacoes() {
             ? `${naoLidas} ${naoLidas === 1 ? "não lida" : "não lidas"}`
             : "Você está em dia."
         }
-        acoes={
-          naoLidas > 0 ? (
-            <form action={marcaTodasLidasForm}>
-              <button
-                type="submit"
-                className="rounded-lg border border-[var(--borda)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--tinta-media)] transition hover:border-[var(--marca-terracotta)] hover:text-[var(--marca-terracotta)]"
-              >
-                Marcar todas como lidas
-              </button>
-            </form>
-          ) : null
-        }
+        acoes={naoLidas > 0 ? <FormMarcarTodas /> : null}
       />
 
-      {notificacoes.length === 0 ? (
+      {itens.length === 0 ? (
         <Vazio
           titulo="Nenhuma notificação"
           descricao="Você recebe um aviso aqui quando alguém menciona você num chat ou atribui uma restrição a você."
         />
       ) : (
-        <ul className="divide-y divide-[var(--grade)] overflow-hidden rounded-xl border border-[var(--borda)] bg-white shadow-[var(--sombra-sm)]">
-          {notificacoes.map((n) => {
-            const href = `/obras/${n.restricao.obra_id}/restricoes/${n.restricao.id}`;
-            return (
-              <li
+        <>
+          <ul className="divide-y divide-[var(--grade)] overflow-hidden rounded-xl border border-[var(--borda)] bg-white shadow-[var(--sombra-sm)]">
+            {itens.map((n) => (
+              <ItemNotificacao
                 key={n.id}
-                className={`flex gap-3 px-4 py-3 text-sm ${n.lida_em ? "bg-white" : "bg-[#eff6ff]"}`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-[var(--tinta-forte)]">
-                    <span className="font-medium">
-                      {n.autor?.nome ?? "Alguém"}
-                    </span>{" "}
-                    {TEXTO[n.tipo]}{" "}
-                    <Link
-                      href={href}
-                      className="font-mono text-[var(--marca-terracotta)] hover:underline"
-                    >
-                      {formataNumero(n.restricao.numero)}
-                    </Link>{" "}
-                    <span className="text-[var(--tinta-media)]">
-                      {n.restricao.descricao.slice(0, 90)}
-                    </span>
-                  </div>
-                  {n.comentario?.texto ? (
-                    <p className="mt-1 line-clamp-2 rounded bg-[var(--marca-gelo)] px-2 py-1 text-xs text-[var(--tinta-media)]">
-                      {n.comentario.texto}
-                    </p>
-                  ) : null}
-                  <div className="mt-1 text-xs text-[var(--tinta-fraca)]">
-                    {formataDataHora(n.criado_em)}
-                  </div>
-                </div>
-                {!n.lida_em ? (
-                  <form action={marcaLidaForm}>
-                    <input type="hidden" name="id" value={n.id} />
-                    <button
-                      type="submit"
-                      className="-m-2 shrink-0 p-2 text-xs text-[var(--tinta-fraca)] hover:text-[var(--tinta-forte)]"
-                    >
-                      marcar lida
-                    </button>
-                  </form>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+                n={{
+                  id: n.id,
+                  tipo: n.tipo,
+                  lida: n.lida_em !== null,
+                  autor: n.autor?.nome ?? "Alguém",
+                  numero: formataNumero(n.restricao.numero),
+                  descricao: n.restricao.descricao.slice(0, 90),
+                  obra: n.restricao.obra
+                    ? `${n.restricao.obra.codigo} · ${n.restricao.obra.nome}`
+                    : "Obra",
+                  comentario: n.comentario?.texto ?? null,
+                  quando: formataDataHora(n.criado_em),
+                  href: `/obras/${n.restricao.obra_id}/restricoes/${n.restricao.id}`,
+                }}
+              />
+            ))}
+          </ul>
+          {temMais ? (
+            limite < MAXIMO_NOTIFICACOES ? (
+              <div className="flex justify-center">
+                <Link
+                  href={`/notificacoes?limite=${proximo}`}
+                  scroll={false}
+                  className="inline-flex min-h-10 items-center rounded-lg border border-[var(--borda)] bg-white px-4 text-sm font-semibold text-[var(--tinta-media)] transition hover:border-[var(--borda-forte)] hover:text-[var(--tinta-forte)]"
+                >
+                  Carregar mais
+                </Link>
+              </div>
+            ) : (
+              <p className="text-center text-xs text-[var(--tinta-fraca)]">
+                Mostrando as {MAXIMO_NOTIFICACOES} mais recentes. As mais
+                antigas continuam nas próprias restrições.
+              </p>
+            )
+          ) : null}
+        </>
       )}
     </div>
   );

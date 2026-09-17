@@ -8,6 +8,7 @@ import {
   formataData,
   formataNumero,
 } from "@/lib/restricoes/dominio";
+import { caminhoDetalhe, nomeResponsavel } from "@/lib/restricoes/filtros";
 import { Etiqueta } from "@/components/ui/basicos";
 import { TOM_PRIORIDADE, TOM_STATUS } from "./tons";
 
@@ -22,11 +23,14 @@ import { TOM_PRIORIDADE, TOM_STATUS } from "./tons";
  */
 export function CartoesRestricoes({
   obraId,
+  qs = "",
   restricoes,
   nomePorId,
   hoje,
 }: {
   obraId: string;
+  /** Recorte atual da grade, levado ao detalhe para o "voltar". */
+  qs?: string;
   restricoes: Restricao[];
   nomePorId: Map<string, string>;
   hoje: string;
@@ -44,13 +48,11 @@ export function CartoesRestricoes({
       {restricoes.map((r) => {
         const atrasada = estaAtrasada(r, hoje);
         const dias = diasParaPrazo(r.data_limite, hoje);
-        const responsavel = r.responsavel_id
-          ? nomePorId.get(r.responsavel_id)
-          : r.responsavel_nome;
+        const responsavel = nomeResponsavel(r, nomePorId);
         return (
           <li key={r.id}>
             <Link
-              href={`/obras/${obraId}/restricoes/${r.id}`}
+              href={caminhoDetalhe(obraId, r.id, qs)}
               className={`block rounded-lg border p-3 transition active:bg-[var(--marca-brand-50)] ${
                 atrasada
                   ? "border-[var(--marca-brand-200)] bg-[var(--marca-brand-50)]"

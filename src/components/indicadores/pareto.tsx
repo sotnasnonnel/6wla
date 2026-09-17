@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import {
   tetoDoEixo,
   SITUACAO_COR,
@@ -8,6 +8,7 @@ import {
   SITUACOES_EMPILHADAS,
   type GrupoSituacao,
 } from "@/lib/restricoes/indicadores";
+import { CaixaDetalhe, descreveGrupo, useLarguraContainer } from "./pecas";
 
 /**
  * Pareto das causas: barras ordenadas da maior para a menor com a linha do
@@ -38,6 +39,7 @@ export function ParetoCausas({
   aoClicar?: (chave: string) => void;
 }) {
   const [ativo, setAtivo] = useState<number | null>(null);
+  const [caixa, largVisivel] = useLarguraContainer<HTMLDivElement>(560);
 
   if (grupos.length === 0) {
     return (
@@ -68,10 +70,9 @@ export function ParetoCausas({
   const T = 28;
   const B = 58;
   const alturaPlot = 200;
-  // Largura de referência fixa: o SVG escala para o container (width 100%), em
-  // vez de deixar metade do painel vazia quando há poucas causas.
-  const LARGURA_ALVO = 1180;
-  const passo = Math.max(58, (LARGURA_ALVO - L - R) / pontos.length);
+  // Ocupa a largura real do painel (texto em pixels de verdade) em vez de
+  // deixar metade vazia quando há poucas causas; apertado, rola.
+  const passo = Math.max(58, (largVisivel - L - R) / pontos.length);
   const largura = L + R + pontos.length * passo;
   const altura = T + alturaPlot + B;
 
@@ -88,14 +89,15 @@ export function ParetoCausas({
 
   return (
     <div className="relative">
-      <div className="overflow-x-auto">
+      <div ref={caixa} className="overflow-x-auto">
         <svg
           viewBox={`0 0 ${largura} ${altura}`}
-          role="img"
+          width={largura}
+          height={altura}
+          role="group"
           aria-label="Pareto das causas 6M"
-          className="w-full"
-          style={{ minWidth: pontos.length * 58, height: "auto" }}
-          onMouseLeave={() => setAtivo(null)}
+          className="block"
+          onPointerLeave={(e) => e.pointerType === "mouse" && setAtivo(null)}
         >
           {[0, 0.25, 0.5, 0.75, 1].map((p) => (
             <g key={p}>
@@ -165,8 +167,21 @@ export function ParetoCausas({
             return (
               <g
                 key={g.chave}
-                onMouseEnter={() => setAtivo(i)}
+                role={aoClicar ? "button" : "img"}
+                tabIndex={0}
+                aria-pressed={aoClicar ? selecionadoAqui : undefined}
+                aria-label={`${descreveGrupo(g)}; ${Math.round(p.acumulado * 100)}% acumulado`}
+                onPointerEnter={(e) => e.pointerType === "mouse" && setAtivo(i)}
+                onPointerDown={() => setAtivo(i)}
+                onFocus={() => setAtivo(i)}
                 onClick={() => aoClicar?.(g.chave)}
+                onKeyDown={(e: KeyboardEvent<SVGGElement>) => {
+                  if (aoClicar && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    aoClicar(g.chave);
+                  }
+                }}
+                className="outline-none"
                 style={{ cursor: aoClicar ? "pointer" : "default" }}
               >
                 <rect
@@ -181,6 +196,10 @@ export function ParetoCausas({
                         ? "rgba(38,64,93,0.05)"
                         : "transparent"
                   }
+                  // Contorno no item ativo: é o indicador de foco do teclado.
+                  stroke={ativo === i ? LINHA_ACUM : "none"}
+                  strokeWidth={1}
+                  rx={4}
                 />
                 {topos.map(({ s, y, h }) => (
                   <rect
@@ -264,20 +283,15 @@ export function ParetoCausas({
         </svg>
       </div>
 
-      <div
-        className="pointer-events-none absolute right-2 top-0 rounded-lg border border-[var(--borda)] bg-white px-2 py-1 text-xs shadow-sm"
-        style={{ visibility: p0 ? "visible" : "hidden" }}
-      >
-        {p0 ? (
-          <>
-            <div className="font-semibold text-[var(--tinta-forte)]">{p0.grupo.chave}</div>
-            <div className="tabular-nums text-[var(--tinta-media)]">
-              {p0.grupo.total} restrições · {Math.round(p0.acumulado * 100)}%
-              acumulado
-            </div>
-          </>
-        ) : null}
-      </div>
+      <CaixaDetalhe
+        {...(p0
+          ? {
+              titulo: p0.grupo.chave,
+              contagem: p0.grupo.contagem,
+              extra: `${p0.grupo.total} restrições · ${Math.round(p0.acumulado * 100)}% acumulado`,
+            }
+          : {})}
+      />
 
       <p className="mt-1 text-center text-xs text-[var(--tinta-fraca)]">
         {dentroDoCorte === 1 ? (

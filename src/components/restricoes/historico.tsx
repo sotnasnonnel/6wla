@@ -1,6 +1,5 @@
 import type { Evento } from "@/server/restricoes/queries";
 import {
-  formataDataHora,
   PRIORIDADE_ROTULO,
   STATUS_ROTULO,
 } from "@/lib/restricoes/dominio";
@@ -31,46 +30,30 @@ function valor(
   return v.length > 80 ? `${v.slice(0, 80)}…` : v;
 }
 
-/** Linha do tempo de alterações (gerada por gatilho no banco). Server Component. */
-export function HistoricoRestricao({
-  eventos,
+/**
+ * Frase de um evento do histórico ("alterou Prazo: 10/09 → 20/09"). Os
+ * eventos são gerados por gatilho no banco; a linha do tempo da restrição
+ * intercala essas frases com os comentários.
+ */
+export function DescricaoEvento({
+  evento: e,
   nomes,
 }: {
-  eventos: Evento[];
+  evento: Evento;
   nomes: Map<string, string>;
 }) {
-  if (eventos.length === 0)
-    return <p className="text-sm text-[var(--tinta-fraca)]">Sem histórico.</p>;
+  if (e.tipo === "criada") return <>criou a restrição</>;
+  if (e.tipo === "importada") return <>importou da planilha</>;
   return (
-    <ol className="space-y-2 text-sm">
-      {[...eventos].reverse().map((e) => (
-        <li key={e.id} className="flex gap-2">
-          <span className="w-24 shrink-0 text-xs text-[var(--tinta-fraca)]">
-            {formataDataHora(e.criado_em)}
-          </span>
-          <div className="min-w-0">
-            <span className="font-medium text-[var(--tinta-media)]">
-              {e.autor?.nome ?? "Sistema"}
-            </span>{" "}
-            {e.tipo === "criada" ? (
-              <span className="text-[var(--tinta-media)]">criou a restrição</span>
-            ) : e.tipo === "importada" ? (
-              <span className="text-[var(--tinta-media)]">importou da planilha</span>
-            ) : (
-              <span className="text-[var(--tinta-media)]">
-                alterou <span className="font-medium">{rotulo(e.campo)}</span>:{" "}
-                <span className="text-[var(--tinta-fraca)] line-through">
-                  {valor(e.campo, e.valor_anterior, nomes)}
-                </span>{" "}
-                →{" "}
-                <span className="text-[var(--tinta-forte)]">
-                  {valor(e.campo, e.valor_novo, nomes)}
-                </span>
-              </span>
-            )}
-          </div>
-        </li>
-      ))}
-    </ol>
+    <>
+      alterou <span className="font-medium">{rotulo(e.campo)}</span>:{" "}
+      <span className="text-[var(--tinta-fraca)] line-through">
+        {valor(e.campo, e.valor_anterior, nomes)}
+      </span>{" "}
+      →{" "}
+      <span className="text-[var(--tinta-forte)]">
+        {valor(e.campo, e.valor_novo, nomes)}
+      </span>
+    </>
   );
 }

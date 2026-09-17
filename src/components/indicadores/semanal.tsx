@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { tetoDoEixo, type PontoSemana } from "@/lib/restricoes/indicadores";
+import { useLarguraContainer } from "./pecas";
 
 /**
- * Índice de remoção por semana: barras do que foi concluído contra a linha do
+ * Previstas e concluídas por semana: barras do que foi concluído contra a linha do
  * que estava previsto para aquela semana. As duas séries contam restrições, na
  * mesma escala — um eixo só, nunca dois.
  */
@@ -17,8 +18,12 @@ const TINTA_FRACA = "#64748b";
 
 type Props = { pontos: PontoSemana[]; acumulado?: boolean };
 
+/** `2026-W36` → `2026`, para o rótulo dizer de que ano é a semana. */
+const anoDa = (chave: string) => chave.slice(0, 4);
+
 export function SerieSemanal({ pontos, acumulado = false }: Props) {
   const [ativo, setAtivo] = useState<number | null>(null);
+  const [caixa, largVisivel] = useLarguraContainer<HTMLDivElement>(560);
 
   if (pontos.length === 0) {
     return (
@@ -38,10 +43,12 @@ export function SerieSemanal({ pontos, acumulado = false }: Props) {
   const T = 14;
   const B = 52;
   const alturaPlot = 180;
-  // Estica para preencher o painel; abaixo de 26px por semana o eixo vira
-  // um borrão, então aí o container rola na horizontal.
-  const LARGURA_ALVO = 1180;
-  const passo = Math.max(26, (LARGURA_ALVO - L - R) / Math.max(1, pontos.length));
+  // Desenha na largura real do painel (texto em pixels de verdade); abaixo de
+  // 26px por semana o eixo vira um borrão, então aí o container rola.
+  const passo = Math.max(
+    26,
+    (largVisivel - L - R) / Math.max(1, pontos.length),
+  );
   const largura = L + R + Math.max(1, pontos.length) * passo;
   const altura = T + alturaPlot + B;
 
@@ -74,14 +81,15 @@ export function SerieSemanal({ pontos, acumulado = false }: Props) {
 
   return (
     <div className="relative">
-      <div className="overflow-x-auto">
+      <div ref={caixa} className="overflow-x-auto">
         <svg
           viewBox={`0 0 ${largura} ${altura}`}
-          role="img"
+          width={largura}
+          height={altura}
+          role="group"
           aria-label="Concluídas e previstas por semana"
-          className="w-full"
-          style={{ minWidth: Math.max(1, pontos.length) * 26, height: "auto" }}
-          onMouseLeave={() => setAtivo(null)}
+          className="block"
+          onPointerLeave={(e) => e.pointerType === "mouse" && setAtivo(null)}
         >
           {marcas.map((m) => (
             <g key={m}>
@@ -118,7 +126,19 @@ export function SerieSemanal({ pontos, acumulado = false }: Props) {
             const h = Math.max(0, y(0) - y(v));
             const largBarra = Math.min(22, passo * 0.5);
             return (
-              <g key={p.chave} onMouseEnter={() => setAtivo(i)}>
+              <g
+                key={p.chave}
+                role="img"
+                tabIndex={0}
+                aria-label={`${p.rotulo} de ${anoDa(p.chave)} (${p.mes}): ${valorC(p)} concluídas, ${valorP(p)} previstas`}
+                onPointerEnter={(e) => e.pointerType === "mouse" && setAtivo(i)}
+                onPointerDown={() => setAtivo(i)}
+                onFocus={() => setAtivo(i)}
+                onKeyDown={(e: KeyboardEvent<SVGGElement>) => {
+                  if (e.key === "Escape") setAtivo(null);
+                }}
+                className="outline-none"
+              >
                 {/* Alvo de hover maior que a marca. */}
                 <rect
                   x={xCentro(i) - passo / 2}
@@ -126,6 +146,10 @@ export function SerieSemanal({ pontos, acumulado = false }: Props) {
                   width={passo}
                   height={alturaPlot}
                   fill={ativo === i ? "rgba(11,11,11,0.04)" : "transparent"}
+                  // Contorno no item ativo: é o indicador de foco do teclado.
+                  stroke={ativo === i ? COR_PREVISTAS : "none"}
+                  strokeWidth={1}
+                  rx={3}
                 />
                 {v > 0 ? (
                   <rect
@@ -201,13 +225,14 @@ export function SerieSemanal({ pontos, acumulado = false }: Props) {
       </div>
 
       <div
+        aria-hidden
         className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 rounded-lg border border-[var(--borda)] bg-white px-2 py-1 text-xs shadow-sm"
         style={{ visibility: p0 ? "visible" : "hidden" }}
       >
         {p0 ? (
           <>
             <div className="font-semibold text-[var(--tinta-forte)]">
-              {p0.rotulo} · {p0.mes}
+              {p0.rotulo} · {p0.mes}/{anoDa(p0.chave)}
             </div>
             <div className="flex items-center gap-1.5 text-[var(--tinta-media)]">
               <span

@@ -1,19 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  atualizaRestricao,
-  excluiRestricao,
-} from "@/server/restricoes/actions";
+import { atualizaRestricao } from "@/server/restricoes/actions";
 import type { Restricao } from "@/server/restricoes/queries";
 import type { Membro } from "@/server/obras/queries";
 import type { RestricaoEditavel } from "@/lib/restricoes/schemas";
 import {
+  formataData,
   PRIORIDADES,
   PRIORIDADE_ROTULO,
-  STATUS,
-  STATUS_ROTULO,
 } from "@/lib/restricoes/dominio";
 import {
   Alerta,
@@ -22,6 +18,7 @@ import {
   Campo,
   Rotulo,
   Selecao,
+  TituloSecao,
 } from "@/components/ui/basicos";
 
 type Props = {
@@ -30,355 +27,414 @@ type Props = {
   papel: "gestor" | "membro";
 };
 
-function v(s: string | null): string {
-  return s ?? "";
+type CampoEditavel = keyof RestricaoEditavel;
+
+type DefCampo = {
+  campo: CampoEditavel;
+  rotulo: string;
+  tipo: "texto" | "area" | "data" | "prioridade" | "membro";
+  obrigatorio?: boolean;
+  lista?: readonly string[];
+  placeholder?: string;
+  /** Linha inteira no modo leitura (texto longo). */
+  largo?: boolean;
+};
+
+const CAUSAS_6M = [
+  "Método",
+  "Material",
+  "Máquina",
+  "Mão de obra",
+  "Medida",
+  "Meio ambiente",
+  "Segurança",
+] as const;
+
+type DefCartao = {
+  titulo: string;
+  campos: DefCampo[];
+  /** Ocupa as duas colunas da grade de cards. */
+  inteiro?: boolean;
+};
+
+const CARTOES: DefCartao[] = [
+  {
+    titulo: "Restrição",
+    inteiro: true,
+    campos: [
+      {
+        campo: "descricao",
+        rotulo: "Descrição",
+        tipo: "area",
+        obrigatorio: true,
+        largo: true,
+      },
+      { campo: "acao", rotulo: "Ação", tipo: "area", largo: true },
+      { campo: "prioridade", rotulo: "Prioridade", tipo: "prioridade" },
+      { campo: "codigo", rotulo: "Código na planilha", tipo: "texto" },
+    ],
+  },
+  {
+    titulo: "Responsável e prazos",
+    campos: [
+      { campo: "responsavel_id", rotulo: "Responsável", tipo: "membro" },
+      {
+        campo: "responsavel_nome",
+        rotulo: "Responsável (texto)",
+        tipo: "texto",
+      },
+      { campo: "responsavel_email", rotulo: "E-mail", tipo: "texto" },
+      { campo: "responsavel_telefone", rotulo: "Telefone", tipo: "texto" },
+      {
+        campo: "data_criacao",
+        rotulo: "Criada em",
+        tipo: "data",
+        obrigatorio: true,
+      },
+      { campo: "data_limite", rotulo: "Prazo", tipo: "data" },
+      { campo: "previsao_conclusao", rotulo: "Previsão", tipo: "data" },
+      { campo: "data_conclusao", rotulo: "Concluída em", tipo: "data" },
+      {
+        campo: "semana_programada",
+        rotulo: "Semana programada",
+        tipo: "texto",
+        placeholder: "S-20",
+      },
+    ],
+  },
+  {
+    titulo: "Classificação",
+    campos: [
+      {
+        campo: "causa_6m",
+        rotulo: "Causa 6M",
+        tipo: "texto",
+        lista: CAUSAS_6M,
+      },
+      { campo: "classificacao", rotulo: "Classificação", tipo: "texto" },
+      { campo: "area", rotulo: "Área", tipo: "texto" },
+      { campo: "setor", rotulo: "Setor", tipo: "texto" },
+      { campo: "localizacao", rotulo: "Local", tipo: "texto" },
+    ],
+  },
+  {
+    titulo: "Atividade",
+    campos: [
+      { campo: "id_atividade", rotulo: "ID da atividade", tipo: "texto" },
+      {
+        campo: "atividade_impactada",
+        rotulo: "Atividade impactada",
+        tipo: "texto",
+        largo: true,
+      },
+      { campo: "inicio_atividade", rotulo: "Início", tipo: "data" },
+    ],
+  },
+  {
+    titulo: "Situação e observações",
+    campos: [
+      {
+        campo: "descricao_status",
+        rotulo: "Situação",
+        tipo: "area",
+        largo: true,
+      },
+      {
+        campo: "observacoes",
+        rotulo: "Observações",
+        tipo: "area",
+        largo: true,
+      },
+    ],
+  },
+];
+
+/**
+ * Detalhes da restrição em cards de leitura, cada um com seu "Editar" (padrão
+ * do app-phd), numa grade de duas colunas. Editar troca a leitura por campos
+ * só daquele card; salvar manda só os campos que mudaram de fato — um card
+ * aberto por muito tempo não desfaz o que outra pessoa gravou nos vizinhos.
+ *
+ * O status não mora aqui: é a barra clicável do cabeçalho.
+ */
+export function DetalhesRestricao({ restricao, membros, papel }: Props) {
+  const extras = restricao.extras as Record<string, unknown>;
+  return (
+    <div className="grid items-start gap-4 md:grid-cols-2">
+      {CARTOES.map((c) => (
+        <CartaoDetalhe
+          key={c.titulo}
+          def={c}
+          restricao={restricao}
+          membros={membros}
+          papel={papel}
+        />
+      ))}
+      {Object.keys(extras).length > 0 ? (
+        <section className="rounded-xl border border-[var(--borda)] bg-white px-5 py-4 shadow-[var(--sombra-sm)] md:col-span-2">
+          <details>
+            <summary className="cursor-pointer">
+              <TituloSecao como="span">Outras colunas da planilha</TituloSecao>
+            </summary>
+            <dl className="mt-3 grid gap-x-4 gap-y-2.5 text-sm sm:grid-cols-2 xl:grid-cols-3">
+              {Object.entries(extras).map(([k, val]) => (
+                <div key={k}>
+                  <dt className="text-xs text-[var(--tinta-fraca)]">{k}</dt>
+                  <dd className="break-words text-[var(--tinta-forte)]">
+                    {String(val)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        </section>
+      ) : null}
+    </div>
+  );
 }
 
-/** Formulário completo da restrição (lado esquerdo da tela de detalhes). */
-export function DetalhesRestricao({ restricao: r, membros, papel }: Props) {
+function CartaoDetalhe({
+  def,
+  restricao: r,
+  membros,
+  papel,
+}: {
+  def: DefCartao;
+  restricao: Restricao;
+  membros: Membro[];
+  papel: "gestor" | "membro";
+}) {
   const router = useRouter();
+  const [editando, setEditando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [salvo, setSalvo] = useState(false);
   const [pendente, inicia] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+  const botaoEditar = useRef<HTMLButtonElement>(null);
+  // Ao sair da edição pelo teclado ou pelos botões, o foco volta ao "Editar";
+  // sem isso ele cairia no corpo da página.
+  const devolverFoco = useRef(false);
+
+  useEffect(() => {
+    if (editando) {
+      formRef.current
+        ?.querySelector<HTMLElement>(
+          "input:not([disabled]), textarea:not([disabled]), select:not([disabled])",
+        )
+        ?.focus();
+    } else if (devolverFoco.current) {
+      devolverFoco.current = false;
+      botaoEditar.current?.focus();
+    }
+  }, [editando]);
+
+  // "Salvo" é um respiro visual, some sozinho.
+  useEffect(() => {
+    if (!salvo) return;
+    const t = setTimeout(() => setSalvo(false), 2000);
+    return () => clearTimeout(t);
+  }, [salvo]);
+  // Linha de base definida: só gestor mexe (o gatilho do banco também barra).
   const baseTravada = papel !== "gestor" && !!r.semana_programada;
+  const nomes = new Map(membros.map((m) => [m.id, m.nome]));
 
-  const enviar = (form: FormData) => {
-    const pega = (k: keyof RestricaoEditavel) => String(form.get(k) ?? "");
-    const entrada: Partial<RestricaoEditavel> = {
-      codigo: pega("codigo") || null,
-      descricao: pega("descricao"),
-      acao: pega("acao") || null,
-      responsavel_id: pega("responsavel_id") || null,
-      responsavel_nome: pega("responsavel_nome") || null,
-      responsavel_email: pega("responsavel_email") || null,
-      responsavel_telefone: pega("responsavel_telefone") || null,
-      status: pega("status") as RestricaoEditavel["status"],
-      prioridade: pega("prioridade") as RestricaoEditavel["prioridade"],
-      descricao_status: pega("descricao_status") || null,
-      causa_6m: pega("causa_6m") || null,
-      classificacao: pega("classificacao") || null,
-      area: pega("area") || null,
-      setor: pega("setor") || null,
-      localizacao: pega("localizacao") || null,
-      id_atividade: pega("id_atividade") || null,
-      atividade_impactada: pega("atividade_impactada") || null,
-      inicio_atividade: pega("inicio_atividade") || null,
-      data_criacao: pega("data_criacao"),
-      data_limite: pega("data_limite") || null,
-      previsao_conclusao: pega("previsao_conclusao") || null,
-      data_conclusao: pega("data_conclusao") || null,
-      observacoes: pega("observacoes") || null,
-    };
-    if (!baseTravada)
-      entrada.semana_programada = pega("semana_programada") || null;
+  const leitura = (d: DefCampo): string => {
+    const valor = r[d.campo];
+    if (valor === null || valor === "") return "—";
+    if (d.tipo === "data") return formataData(String(valor));
+    if (d.tipo === "prioridade")
+      return PRIORIDADE_ROTULO[valor as RestricaoEditavel["prioridade"]];
+    if (d.tipo === "membro")
+      return nomes.get(String(valor)) ?? "Usuário indisponível";
+    return String(valor);
+  };
 
+  const fecha = () => {
+    devolverFoco.current = true;
+    setErro(null);
+    setEditando(false);
+  };
+
+  const salvar = (form: FormData) => {
+    const patch: Record<string, string | null> = {};
+    for (const d of def.campos) {
+      if (d.campo === "semana_programada" && baseTravada) continue;
+      const bruto = String(form.get(d.campo) ?? "").trim();
+      const novo = bruto === "" && !d.obrigatorio ? null : bruto;
+      const original = r[d.campo];
+      const antes =
+        original === null || original === "" ? null : String(original);
+      if ((novo === "" ? null : novo) !== antes) patch[d.campo] = novo;
+    }
+    if (Object.keys(patch).length === 0) {
+      fecha();
+      return;
+    }
     inicia(async () => {
-      const res = await atualizaRestricao(r.id, entrada);
+      const res = await atualizaRestricao(
+        r.id,
+        patch as Partial<RestricaoEditavel>,
+      );
       if (!res.ok) {
         setErro(res.erro);
-        setSalvo(false);
         return;
       }
-      setErro(null);
+      fecha();
       setSalvo(true);
       router.refresh();
     });
   };
 
+  const id = (campo: string) => `${r.id}-${campo}`;
+
   return (
-    <form
-      onSubmit={(ev) => {
-        ev.preventDefault();
-        enviar(new FormData(ev.currentTarget));
-      }}
-      className="space-y-4"
+    <section
+      className={`rounded-xl border border-[var(--borda)] bg-white px-5 py-4 shadow-[var(--sombra-sm)] ${def.inteiro ? "md:col-span-2" : ""}`}
     >
-      <div>
-        <Rotulo htmlFor="descricao">Restrição</Rotulo>
-        <AreaTexto
-          id="descricao"
-          name="descricao"
-          defaultValue={r.descricao}
-          rows={3}
-          required
-        />
-      </div>
-      <div>
-        <Rotulo htmlFor="acao">Ação</Rotulo>
-        <AreaTexto id="acao" name="acao" defaultValue={v(r.acao)} rows={2} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <Rotulo htmlFor="status">Status</Rotulo>
-          <Selecao id="status" name="status" defaultValue={r.status}>
-            {STATUS.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_ROTULO[s]}
-              </option>
-            ))}
-          </Selecao>
-        </div>
-        <div>
-          <Rotulo htmlFor="prioridade">Prioridade</Rotulo>
-          <Selecao
-            id="prioridade"
-            name="prioridade"
-            defaultValue={r.prioridade}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <TituloSecao>{def.titulo}</TituloSecao>
+        <div className="flex items-center gap-1">
+          <span
+            role="status"
+            className="text-xs font-semibold text-[var(--sucesso-tinta)]"
           >
-            {PRIORIDADES.map((p) => (
-              <option key={p} value={p}>
-                {PRIORIDADE_ROTULO[p]}
-              </option>
-            ))}
-          </Selecao>
-        </div>
-        <div>
-          <Rotulo htmlFor="responsavel_id">Responsável (usuário)</Rotulo>
-          <Selecao
-            id="responsavel_id"
-            name="responsavel_id"
-            defaultValue={v(r.responsavel_id)}
-          >
-            <option value="">— nenhum —</option>
-            {membros.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nome}
-              </option>
-            ))}
-          </Selecao>
-        </div>
-        <div>
-          <Rotulo htmlFor="responsavel_nome">Responsável (texto)</Rotulo>
-          <Campo
-            id="responsavel_nome"
-            name="responsavel_nome"
-            defaultValue={v(r.responsavel_nome)}
-          />
-        </div>
-        <div>
-          <Rotulo htmlFor="responsavel_email">E-mail do responsável</Rotulo>
-          <Campo
-            id="responsavel_email"
-            name="responsavel_email"
-            defaultValue={v(r.responsavel_email)}
-          />
-        </div>
-        <div>
-          <Rotulo htmlFor="responsavel_telefone">Telefone</Rotulo>
-          <Campo
-            id="responsavel_telefone"
-            name="responsavel_telefone"
-            defaultValue={v(r.responsavel_telefone)}
-          />
-        </div>
-
-        <div>
-          <Rotulo htmlFor="data_criacao">Criada em</Rotulo>
-          <Campo
-            id="data_criacao"
-            name="data_criacao"
-            type="date"
-            defaultValue={r.data_criacao}
-            required
-          />
-        </div>
-        <div>
-          <Rotulo htmlFor="data_limite">Prazo (data limite)</Rotulo>
-          <Campo
-            id="data_limite"
-            name="data_limite"
-            type="date"
-            defaultValue={v(r.data_limite)}
-          />
-          {r.prazo_original && r.prazo_original !== r.data_limite ? (
-            <p className="mt-1 text-xs text-[var(--aviso-tinta)]">
-              Prazo original {r.prazo_original.split("-").reverse().join("/")} ·{" "}
-              {r.reprogramacoes} reprogramação(ões)
-            </p>
+            {salvo ? "Salvo" : ""}
+          </span>
+          {!editando ? (
+            <button
+              ref={botaoEditar}
+              type="button"
+              onClick={() => {
+                setErro(null);
+                setSalvo(false);
+                setEditando(true);
+              }}
+              aria-label={`Editar ${def.titulo}`}
+              className="-my-2 -mr-2 inline-flex min-h-10 items-center rounded-lg px-3 text-xs font-semibold text-[var(--marca-terracotta)] transition hover:bg-[var(--marca-brand-50)]"
+            >
+              <span aria-hidden>✎</span>&nbsp;Editar
+            </button>
           ) : null}
         </div>
-        <div>
-          <Rotulo htmlFor="previsao_conclusao">Previsão de conclusão</Rotulo>
-          <Campo
-            id="previsao_conclusao"
-            name="previsao_conclusao"
-            type="date"
-            defaultValue={v(r.previsao_conclusao)}
-          />
-        </div>
-        <div>
-          <Rotulo htmlFor="data_conclusao">Concluída em</Rotulo>
-          <Campo
-            id="data_conclusao"
-            name="data_conclusao"
-            type="date"
-            defaultValue={v(r.data_conclusao)}
-          />
-        </div>
-
-        <div>
-          <Rotulo htmlFor="semana_programada">
-            Semana programada (linha de base)
-          </Rotulo>
-          <Campo
-            id="semana_programada"
-            name="semana_programada"
-            defaultValue={v(r.semana_programada)}
-            disabled={baseTravada}
-            title={baseTravada ? "Só gestor da obra altera" : undefined}
-            placeholder="S-20"
-          />
-        </div>
-        <div>
-          <Rotulo htmlFor="codigo">Código na planilha</Rotulo>
-          <Campo id="codigo" name="codigo" defaultValue={v(r.codigo)} />
-        </div>
-
-        <div>
-          <Rotulo htmlFor="causa_6m">Causa 6M</Rotulo>
-          <Campo
-            id="causa_6m"
-            name="causa_6m"
-            defaultValue={v(r.causa_6m)}
-            list="lista-6m"
-          />
-          <datalist id="lista-6m">
-            {[
-              "Método",
-              "Material",
-              "Máquina",
-              "Mão de obra",
-              "Medida",
-              "Meio ambiente",
-              "Segurança",
-            ].map((x) => (
-              <option key={x} value={x} />
-            ))}
-          </datalist>
-        </div>
-        <div>
-          <Rotulo htmlFor="classificacao">Classificação</Rotulo>
-          <Campo
-            id="classificacao"
-            name="classificacao"
-            defaultValue={v(r.classificacao)}
-          />
-        </div>
-        <div>
-          <Rotulo htmlFor="area">Área</Rotulo>
-          <Campo id="area" name="area" defaultValue={v(r.area)} />
-        </div>
-        <div>
-          <Rotulo htmlFor="setor">Setor</Rotulo>
-          <Campo id="setor" name="setor" defaultValue={v(r.setor)} />
-        </div>
-        <div>
-          <Rotulo htmlFor="localizacao">Local</Rotulo>
-          <Campo
-            id="localizacao"
-            name="localizacao"
-            defaultValue={v(r.localizacao)}
-          />
-        </div>
-        <div>
-          <Rotulo htmlFor="id_atividade">ID da atividade</Rotulo>
-          <Campo
-            id="id_atividade"
-            name="id_atividade"
-            defaultValue={v(r.id_atividade)}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Rotulo htmlFor="atividade_impactada">Atividade impactada</Rotulo>
-          <Campo
-            id="atividade_impactada"
-            name="atividade_impactada"
-            defaultValue={v(r.atividade_impactada)}
-          />
-        </div>
-        <div>
-          <Rotulo htmlFor="inicio_atividade">Início da atividade</Rotulo>
-          <Campo
-            id="inicio_atividade"
-            name="inicio_atividade"
-            type="date"
-            defaultValue={v(r.inicio_atividade)}
-          />
-        </div>
       </div>
 
-      <div>
-        <Rotulo htmlFor="descricao_status">Situação (texto livre)</Rotulo>
-        <AreaTexto
-          id="descricao_status"
-          name="descricao_status"
-          defaultValue={v(r.descricao_status)}
-          rows={2}
-        />
-      </div>
-      <div>
-        <Rotulo htmlFor="observacoes">Observações</Rotulo>
-        <AreaTexto
-          id="observacoes"
-          name="observacoes"
-          defaultValue={v(r.observacoes)}
-          rows={2}
-        />
-      </div>
-
-      {Object.keys(r.extras as Record<string, unknown>).length > 0 ? (
-        <details className="rounded-lg border border-[var(--borda)] bg-[var(--marca-gelo)] p-3 text-sm">
-          <summary className="cursor-pointer font-medium text-[var(--tinta-media)]">
-            Outras colunas da planilha
-          </summary>
-          <dl className="mt-2 grid grid-cols-1 gap-x-3 gap-y-1 sm:grid-cols-[auto_1fr]">
-            {Object.entries(r.extras as Record<string, string>).map(
-              ([k, val]) => (
-                <div key={k} className="contents">
-                  <dt className="text-[var(--tinta-fraca)]">{k}</dt>
-                  <dd className="text-[var(--tinta-forte)]">{String(val)}</dd>
-                </div>
-              ),
-            )}
-          </dl>
-        </details>
-      ) : null}
-
-      {erro ? <Alerta>{erro}</Alerta> : null}
-      {salvo && !erro ? <Alerta tipo="ok">Alterações salvas.</Alerta> : null}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Botao
-          type="submit"
-          disabled={pendente}
-          className="flex-1 py-2 sm:flex-none sm:py-1.5"
+      {!editando ? (
+        <dl
+          className={`grid grid-cols-2 gap-x-4 gap-y-3 text-sm ${def.inteiro ? "sm:grid-cols-4" : ""}`}
         >
-          {pendente ? "Salvando…" : "Salvar"}
-        </Botao>
-        {papel === "gestor" ? (
-          <Botao
-            variante="perigo"
-            className="flex-1 py-2 sm:flex-none sm:py-1.5"
-            disabled={pendente}
-            onClick={() => {
-              if (
-                !window.confirm(
-                  "Excluir esta restrição? O chat e o histórico vão junto.",
-                )
-              )
-                return;
-              inicia(async () => {
-                const res = await excluiRestricao(r.id);
-                if (!res.ok) setErro(res.erro);
-                else router.push(`/obras/${r.obra_id}`);
-              });
-            }}
-          >
-            Excluir
-          </Botao>
-        ) : null}
-      </div>
-    </form>
+          {def.campos.map((d) => (
+            <div key={d.campo} className={d.largo ? "col-span-full" : ""}>
+              <dt className="text-xs text-[var(--tinta-fraca)]">{d.rotulo}</dt>
+              <dd className="break-words whitespace-pre-line text-[var(--tinta-forte)]">
+                {leitura(d)}
+              </dd>
+              {d.campo === "data_limite" &&
+              r.prazo_original &&
+              r.prazo_original !== r.data_limite ? (
+                <dd className="mt-0.5 text-[11px] text-[var(--aviso-tinta)]">
+                  Original {formataData(r.prazo_original)} · {r.reprogramacoes}{" "}
+                  {r.reprogramacoes === 1 ? "reprogramação" : "reprogramações"}
+                </dd>
+              ) : null}
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <form
+          ref={formRef}
+          aria-label={`Editar ${def.titulo}`}
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            salvar(new FormData(ev.currentTarget));
+          }}
+          onKeyDown={(ev) => {
+            if (ev.key === "Escape" && !pendente) {
+              ev.preventDefault();
+              fecha();
+            }
+          }}
+          className={`grid gap-3 ${def.inteiro ? "sm:grid-cols-4" : "sm:grid-cols-2"}`}
+        >
+          {def.campos.map((d) => {
+            const atual = r[d.campo];
+            const valor = atual === null ? "" : String(atual);
+            const travado = d.campo === "semana_programada" && baseTravada;
+            return (
+              <div
+                key={d.campo}
+                className={d.tipo === "area" || d.largo ? "col-span-full" : ""}
+              >
+                <Rotulo htmlFor={id(d.campo)}>{d.rotulo}</Rotulo>
+                {d.tipo === "area" ? (
+                  <AreaTexto
+                    id={id(d.campo)}
+                    name={d.campo}
+                    defaultValue={valor}
+                    rows={3}
+                    required={d.obrigatorio}
+                  />
+                ) : d.tipo === "prioridade" ? (
+                  <Selecao id={id(d.campo)} name={d.campo} defaultValue={valor}>
+                    {PRIORIDADES.map((p) => (
+                      <option key={p} value={p}>
+                        {PRIORIDADE_ROTULO[p]}
+                      </option>
+                    ))}
+                  </Selecao>
+                ) : d.tipo === "membro" ? (
+                  <Selecao id={id(d.campo)} name={d.campo} defaultValue={valor}>
+                    <option value="">— nenhum —</option>
+                    {/* Sem esta opção o select cairia em "nenhum" e salvar
+                        apagaria o responsável sem ninguém pedir. */}
+                    {valor && !nomes.has(valor) ? (
+                      <option value={valor}>Usuário indisponível</option>
+                    ) : null}
+                    {membros.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nome}
+                      </option>
+                    ))}
+                  </Selecao>
+                ) : (
+                  <>
+                    <Campo
+                      id={id(d.campo)}
+                      name={d.campo}
+                      type={d.tipo === "data" ? "date" : "text"}
+                      defaultValue={valor}
+                      required={d.obrigatorio}
+                      disabled={travado}
+                      title={travado ? "Só gestor da obra altera" : undefined}
+                      placeholder={d.placeholder}
+                      list={d.lista ? `${id(d.campo)}-lista` : undefined}
+                    />
+                    {d.lista ? (
+                      <datalist id={`${id(d.campo)}-lista`}>
+                        {d.lista.map((x) => (
+                          <option key={x} value={x} />
+                        ))}
+                      </datalist>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            );
+          })}
+          {erro ? (
+            <div className="col-span-full">
+              <Alerta>{erro}</Alerta>
+            </div>
+          ) : null}
+          <div className="col-span-full flex justify-end gap-2 pt-1">
+            <Botao variante="fantasma" onClick={fecha} disabled={pendente}>
+              Cancelar
+            </Botao>
+            <Botao type="submit" disabled={pendente}>
+              {pendente ? "Salvando…" : "Salvar"}
+            </Botao>
+          </div>
+        </form>
+      )}
+    </section>
   );
 }

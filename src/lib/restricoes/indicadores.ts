@@ -368,7 +368,8 @@ export function porSemana(linhas: LinhaIndicador[]): PontoSemana[] {
       const p = garante(r.data_conclusao);
       if (p) p.concluidas += 1;
     }
-    if (r.data_limite) {
+    // Cancelada não estava mais prevista para acontecer (o IRR também a exclui).
+    if (r.data_limite && r.status !== "cancelada") {
       const p = garante(r.data_limite);
       if (p) p.previstas += 1;
     }

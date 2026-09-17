@@ -31,7 +31,11 @@
   --plano: #f8fafc;
   --tinta-forte: #0f172a;
   --tinta-media: #475569;
+  /* Menor tinta para texto que precisa ser lido (4.76:1 no branco, ~4.5:1
+     no --plano): rótulos, títulos de grupo, metadados. */
   --tinta-fraca: #64748b;
+  /* Só decorativo (2.6:1): separadores, ícones secundários, placeholder.
+     Nunca para texto que a pessoa precisa ler. */
   --tinta-apagada: #94a3b8;
   --borda: #e2e8f0;
   --borda-forte: #cbd5e1;

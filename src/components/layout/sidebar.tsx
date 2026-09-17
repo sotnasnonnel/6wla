@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLinkStatus } from "next/link";
 import {
   createContext,
   useContext,
@@ -12,6 +13,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { SinoTopo } from "./nao-lidas";
 
 /**
  * Barra lateral de navegação, com dois modos:
@@ -28,6 +30,9 @@ import {
  */
 
 export const COOKIE_SIDEBAR = "6wla_sidebar";
+
+/** `id` do `<main>` do layout, que fica inerte com a gaveta aberta. */
+export const ID_CONTEUDO = "conteudo";
 
 /**
  * O estado de recolhido é único e mora aqui. O rodapé é montado no servidor e
@@ -62,6 +67,8 @@ export type ItemMenu = {
   rotulo: string;
   icone: keyof typeof ICONES;
   prefixo?: boolean;
+  /** Outro prefixo de rota que também marca o item como ativo. */
+  ativoEm?: string;
 };
 
 export type GrupoMenu = { titulo?: string; itens: ItemMenu[] };
@@ -90,6 +97,7 @@ export function Sidebar({
   const caminho = usePathname();
   const ehCelular = useEhCelular();
   const gatilho = useRef<HTMLButtonElement>(null);
+  const painelRef = useRef<HTMLElement>(null);
 
   // Navegou: a gaveta fecha. Derivar do pathname no render evita um efeito só
   // para chamar setState (o compilador do React barra esse padrão).
@@ -102,17 +110,52 @@ export function Sidebar({
     if (devolveFoco) gatilho.current?.focus();
   };
 
-  // Esc fecha a gaveta de qualquer lugar dela e devolve o foco a quem abriu.
+  // Gaveta aberta no celular se comporta como diálogo: o foco entra nela, Tab
+  // não escapa, o conteúdo atrás fica inerte e Esc fecha devolvendo o foco a
+  // quem abriu.
+  const gavetaModal = gaveta.aberta && ehCelular;
   useEffect(() => {
-    if (!gaveta.aberta) return;
+    if (!gavetaModal) return;
+    const painel = painelRef.current;
+    const conteudo = document.getElementById(ID_CONTEUDO);
+    conteudo?.setAttribute("inert", "");
+    const focaveis = () =>
+      painel
+        ? Array.from(
+            painel.querySelectorAll<HTMLElement>(
+              'a[href], button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            ),
+          ).filter((el) => el.offsetParent !== null)
+        : [];
+    focaveis()[0]?.focus();
+
     const aoTeclar = (ev: KeyboardEvent) => {
-      if (ev.key !== "Escape") return;
-      setGaveta((g) => ({ ...g, aberta: false }));
-      gatilho.current?.focus();
+      if (ev.key === "Escape") {
+        setGaveta((g) => ({ ...g, aberta: false }));
+        gatilho.current?.focus();
+        return;
+      }
+      if (ev.key !== "Tab") return;
+      const lista = focaveis();
+      const primeiro = lista[0];
+      const ultimo = lista[lista.length - 1];
+      if (!primeiro || !ultimo) return;
+      const ativo = document.activeElement;
+      const dentro = painel?.contains(ativo) ?? false;
+      if (ev.shiftKey && (ativo === primeiro || !dentro)) {
+        ev.preventDefault();
+        ultimo.focus();
+      } else if (!ev.shiftKey && (ativo === ultimo || !dentro)) {
+        ev.preventDefault();
+        primeiro.focus();
+      }
     };
     window.addEventListener("keydown", aoTeclar);
-    return () => window.removeEventListener("keydown", aoTeclar);
-  }, [gaveta.aberta]);
+    return () => {
+      window.removeEventListener("keydown", aoTeclar);
+      conteudo?.removeAttribute("inert");
+    };
+  }, [gavetaModal]);
 
   const alterna = () => {
     const novo = !colapsada;
@@ -124,8 +167,17 @@ export function Sidebar({
     }
   };
 
+  // O menu da obra sai só do id da URL: o admin pode abrir obra de outro
+  // workspace, que não está em `obras`. Nome e código aparecem quando se sabe.
   const obraId = /^\/obras\/([0-9a-f-]{36})(\/|$)/i.exec(caminho)?.[1] ?? null;
-  const obra = obraId ? (obras.find((o) => o.id === obraId) ?? null) : null;
+  const obra: Obra | null = obraId
+    ? (obras.find((o) => o.id === obraId) ?? {
+        id: obraId,
+        codigo: "",
+        nome: "",
+      })
+    : null;
+  const nomeObra = obra?.nome || null;
 
   const grupos: GrupoMenu[] = obra
     ? [
@@ -138,12 +190,29 @@ export function Sidebar({
               icone: "indicadores",
             },
             {
+              href: `/obras/${obra.id}/insights`,
+              rotulo: "Insights",
+              icone: "insights",
+            },
+            {
               href: `/obras/${obra.id}/tabela`,
               rotulo: "Tabela",
               icone: "tabela",
+              // O detalhe de uma restrição é "dentro" da tabela para quem navega.
+              ativoEm: `/obras/${obra.id}/restricoes`,
+            },
+            {
+              href: `/obras/${obra.id}/equipe`,
+              rotulo: "Equipe",
+              icone: "pessoas",
             },
             ...(podeImportar
               ? [
+                  {
+                    href: `/obras/${obra.id}/automacoes`,
+                    rotulo: "Automações",
+                    icone: "automacoes" as const,
+                  },
                   {
                     href: `/obras/${obra.id}/importar`,
                     rotulo: "Importar planilha",
@@ -172,7 +241,9 @@ export function Sidebar({
   return (
     <>
       {/* Celular: barra fina com menu e logo (a `.mobile-topbar` do PHD). */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-[var(--borda)] bg-white px-3 md:hidden">
+      {/* Dentro de uma obra, o nome dela ocupa o lugar do logo: é o
+          contexto que importa numa tela pequena. */}
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-2 border-b border-[var(--borda)] bg-white px-2 md:hidden">
         <button
           ref={gatilho}
           type="button"
@@ -180,11 +251,30 @@ export function Sidebar({
           aria-label="Abrir menu"
           aria-controls="menu-lateral"
           aria-expanded={gaveta.aberta}
-          className="grid h-9 w-9 place-items-center rounded-lg text-[var(--tinta-media)] transition hover:bg-[var(--marca-gelo)]"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-[var(--tinta-media)] transition hover:bg-[var(--marca-gelo)]"
         >
           <Icone nome="menu" />
         </button>
-        <Logo />
+        <div className="min-w-0 flex-1">
+          {obra ? (
+            <Link
+              href={`/obras/${obra.id}/indicadores`}
+              className="block min-w-0 leading-tight"
+            >
+              {obra.codigo ? (
+                <span className="block font-mono text-[0.7rem] font-semibold text-[var(--marca-azul)]">
+                  {obra.codigo}
+                </span>
+              ) : null}
+              <span className="block truncate text-sm font-semibold text-[var(--tinta-forte)]">
+                {nomeObra ?? "Obra"}
+              </span>
+            </Link>
+          ) : (
+            <Logo />
+          )}
+        </div>
+        <SinoTopo icone={<Icone nome="sino" />} />
       </div>
 
       {gaveta.aberta ? (
@@ -197,7 +287,10 @@ export function Sidebar({
       ) : null}
 
       <aside
+        ref={painelRef}
         id="menu-lateral"
+        aria-label="Menu"
+        {...(gavetaModal ? { role: "dialog", "aria-modal": true } : {})}
         // Gaveta fechada sai do caminho do teclado: sem isto, Tab passeia por
         // um menu invisível fora da tela.
         inert={ehCelular && !gaveta.aberta}
@@ -228,7 +321,7 @@ export function Sidebar({
             type="button"
             onClick={() => fechaGaveta(true)}
             aria-label="Fechar menu"
-            className="grid h-8 w-8 place-items-center rounded-lg text-[var(--tinta-fraca)] transition hover:bg-[var(--marca-gelo)] hover:text-[var(--tinta-forte)] md:hidden"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-[var(--tinta-fraca)] transition hover:bg-[var(--marca-gelo)] hover:text-[var(--tinta-forte)] md:hidden"
           >
             <Icone nome="fechar" />
           </button>
@@ -244,13 +337,13 @@ export function Sidebar({
               <div className="rounded-lg bg-[var(--plano)] px-3 py-2">
                 <div
                   className="truncate text-sm font-semibold text-[var(--tinta-forte)]"
-                  title={obra.nome}
+                  title={nomeObra ?? undefined}
                 >
-                  {obra.nome}
+                  {nomeObra ?? "Obra de outro workspace"}
                 </div>
                 <Link
                   href="/obras"
-                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-[var(--tinta-fraca)] transition hover:text-[var(--marca-terracotta)]"
+                  className="mt-0.5 inline-flex min-h-8 items-center gap-1 text-xs text-[var(--tinta-fraca)] transition hover:text-[var(--marca-terracotta)]"
                 >
                   <Icone nome="voltar" tamanho={13} />
                   Todas as obras
@@ -259,7 +352,7 @@ export function Sidebar({
             ) : null}
           </div>
         ) : null}
-        {obra && colapsada ? (
+        {obra && obra.codigo && colapsada ? (
           <div
             title={obra.nome}
             className="mx-2 mt-3 hidden h-8 place-items-center rounded-lg bg-[var(--plano)] text-[11px] font-bold text-[var(--tinta-media)] md:grid"
@@ -273,7 +366,7 @@ export function Sidebar({
             <div key={grupo.titulo ?? i} className={i > 0 ? "mt-3" : ""}>
               {grupo.titulo ? (
                 <h2
-                  className={`px-3 pt-1.5 pb-1 text-[0.625rem] font-semibold tracking-[0.05em] whitespace-nowrap text-[var(--tinta-apagada)] uppercase ${soLargo}`}
+                  className={`px-3 pt-1.5 pb-1 text-[0.625rem] font-semibold tracking-[0.05em] whitespace-nowrap text-[var(--tinta-fraca)] uppercase ${soLargo}`}
                 >
                   {grupo.titulo}
                 </h2>
@@ -283,10 +376,13 @@ export function Sidebar({
               ) : null}
               <ul className="space-y-0.5">
                 {grupo.itens.map((item) => {
-                  const ativo = item.prefixo
-                    ? caminho === item.href ||
-                      caminho.startsWith(`${item.href}/`)
-                    : caminho === item.href;
+                  const ativo =
+                    (item.prefixo
+                      ? caminho === item.href ||
+                        caminho.startsWith(`${item.href}/`)
+                      : caminho === item.href) ||
+                    (item.ativoEm !== undefined &&
+                      caminho.startsWith(`${item.ativoEm}/`));
                   return (
                     <li key={item.href}>
                       <Link
@@ -303,6 +399,7 @@ export function Sidebar({
                         <span className={`truncate ${soLargo}`}>
                           {item.rotulo}
                         </span>
+                        <IndicadorNavegando />
                       </Link>
                     </li>
                   );
@@ -358,10 +455,13 @@ function Logo() {
 export function ItemRodape({
   children,
   titulo,
+  rotuloAcessivel,
   href,
 }: {
   children: ReactNode;
   titulo?: string;
+  /** Nome para leitor de tela quando o texto visível não basta (contador). */
+  rotuloAcessivel?: string;
   href: string;
 }) {
   const colapsada = useMenuColapsado();
@@ -369,7 +469,8 @@ export function ItemRodape({
     <Link
       href={href}
       title={titulo}
-      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap text-[var(--tinta-media)] transition hover:bg-[var(--plano)] hover:text-[var(--tinta-forte)] ${colapsada ? "md:justify-center md:px-0" : ""}`}
+      aria-label={rotuloAcessivel}
+      className={`flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap text-[var(--tinta-media)] transition hover:bg-[var(--plano)] hover:text-[var(--tinta-forte)] ${colapsada ? "md:justify-center md:px-0" : ""}`}
     >
       {children}
     </Link>
@@ -379,6 +480,9 @@ export function ItemRodape({
 const ICONES = {
   indicadores: "M3 3v18h18M7 15l3-4 3 3 5-7",
   tabela: "M3 5h18v14H3zM3 10h18M9 10v9M15 10v9",
+  // Lâmpada: o que os números da obra estão dizendo.
+  insights:
+    "M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3",
   obras: "M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5",
   pessoas:
     "M16 20v-2a4 4 0 0 0-8 0v2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M21 20v-2a3 3 0 0 0-2-2.8",
@@ -394,6 +498,9 @@ const ICONES = {
   menu: "M3 6h18M3 12h18M3 18h18",
   fechar: "M18 6 6 18M6 6l12 12",
   importar: "M12 3v12M8 11l4 4 4-4M4 21h16",
+  // Envelope com relógio: relatório que sai sozinho por e-mail.
+  automacoes:
+    "M21 11V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7M3 7l9 6 9-6M18 15v3l2 1M22 18a4 4 0 1 1-8 0 4 4 0 0 1 8 0",
 } as const;
 
 export function Icone({
@@ -418,5 +525,21 @@ export function Icone({
     >
       <path d={ICONES[nome]} />
     </svg>
+  );
+}
+
+/**
+ * Ponto pulsante no item clicado enquanto a próxima tela carrega: resposta
+ * imediata ao toque, mesmo antes do esqueleto aparecer.
+ */
+function IndicadorNavegando() {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      aria-hidden
+      className={`ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--marca-terracotta)] transition-opacity motion-safe:animate-pulse ${
+        pending ? "opacity-100" : "opacity-0"
+      }`}
+    />
   );
 }

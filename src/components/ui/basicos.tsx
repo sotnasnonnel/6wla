@@ -17,13 +17,16 @@ import {
 type Variante = "primario" | "secundario" | "perigo" | "fantasma";
 
 const VARIANTES: Record<Variante, string> = {
+  // Desabilitado sem opacidade: fundo terracota claro com texto terracota
+  // escuro (contraste ~5.8:1). Branco sobre terracota clara ficava ilegível.
   primario:
-    "bg-[var(--marca-terracotta)] text-white hover:bg-[var(--marca-terracotta-escuro)] hover:shadow-[0_4px_12px_rgba(196,74,40,0.28)] disabled:bg-[var(--marca-brand-200)] disabled:shadow-none",
+    "bg-[var(--marca-terracotta)] text-white hover:bg-[var(--marca-terracotta-escuro)] hover:shadow-[0_4px_12px_rgba(196,74,40,0.28)] disabled:bg-[var(--marca-brand-100)] disabled:text-[var(--marca-terracotta-escuro)] disabled:shadow-none disabled:hover:bg-[var(--marca-brand-100)]",
   secundario:
-    "bg-white text-[var(--marca-azul)] border border-[var(--borda)] hover:bg-[var(--plano)] hover:border-[var(--borda-forte)]",
-  perigo: "bg-[var(--perigo-fundo)] text-[var(--perigo)] hover:bg-[#fecaca]",
+    "bg-white text-[var(--marca-azul)] border border-[var(--borda)] hover:bg-[var(--plano)] hover:border-[var(--borda-forte)] disabled:opacity-60",
+  perigo:
+    "bg-[var(--perigo-fundo)] text-[var(--perigo-tinta)] hover:bg-[#fecaca] disabled:opacity-60",
   fantasma:
-    "text-[var(--tinta-fraca)] hover:bg-[var(--marca-gelo)] hover:text-[var(--tinta-forte)]",
+    "text-[var(--tinta-media)] hover:bg-[var(--marca-gelo)] hover:text-[var(--tinta-forte)] disabled:opacity-60",
 };
 
 export function Botao({
@@ -35,7 +38,7 @@ export function Botao({
     <button
       type="button"
       {...props}
-      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-9 ${VARIANTES[variante]} ${className}`}
+      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed sm:min-h-9 ${VARIANTES[variante]} ${className}`}
     />
   );
 }
@@ -274,5 +277,24 @@ export function Vazio({
       ) : null}
       {acao ? <div className="mt-4 flex justify-center">{acao}</div> : null}
     </div>
+  );
+}
+
+/**
+ * Título de seção do app-phd (`.section-title`): pequeno, em versalete, azul
+ * petróleo. Organiza cards sem competir com o título da página.
+ */
+export function TituloSecao({
+  children,
+  como = "h2",
+}: {
+  children: ReactNode;
+  como?: "h2" | "h3" | "span";
+}) {
+  const Tag = como;
+  return (
+    <Tag className="flex items-center gap-2 text-[0.78rem] font-bold tracking-[0.05em] text-[var(--marca-azul)] uppercase">
+      {children}
+    </Tag>
   );
 }

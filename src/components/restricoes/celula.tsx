@@ -31,6 +31,10 @@ type Props = {
  *    a célula ao usuário em vez de deixá-la desabilitada para sempre.
  *  - **não perder o que foi digitado.** No erro, o rascunho fica na tela com
  *    "tentar de novo" e "cancelar"; ninguém redigita por causa de rede ruim.
+ *
+ * Quem sai da edição pelo teclado (Enter, Esc) ou pelos botões do erro volta
+ * com o foco na célula, para seguir navegando; quem saiu clicando em outro
+ * lugar não tem o foco puxado de volta.
  */
 export function CelulaEditavel({
   valor,
@@ -49,12 +53,18 @@ export function CelulaEditavel({
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const emVoo = useRef(false);
+  const devolverFoco = useRef(false);
+  const exibicaoRef = useRef<HTMLDivElement>(null);
   const ref = useRef<
     HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
   >(null);
 
   useEffect(() => {
     if (editando) ref.current?.focus();
+    else if (devolverFoco.current) {
+      devolverFoco.current = false;
+      exibicaoRef.current?.focus();
+    }
   }, [editando]);
 
   // O marcador de "salvo" é um respiro visual, não um estado de negócio.
@@ -105,9 +115,11 @@ export function CelulaEditavel({
   const teclas = (ev: KeyboardEvent) => {
     if (ev.key === "Escape") {
       ev.preventDefault();
+      devolverFoco.current = true;
       fechar();
     } else if (ev.key === "Enter" && !(tipo === "texto" && ev.shiftKey)) {
       ev.preventDefault();
+      devolverFoco.current = true;
       void salvar();
     }
   };
@@ -122,6 +134,7 @@ export function CelulaEditavel({
   if (!editando) {
     return (
       <div
+        ref={exibicaoRef}
         role="button"
         tabIndex={desabilitada ? -1 : 0}
         title={titulo ?? (desabilitada ? undefined : "Clique para editar")}
@@ -133,7 +146,11 @@ export function CelulaEditavel({
         className={`relative min-h-[30px] w-full px-2 py-1 text-sm ${desabilitada ? "cursor-default text-[var(--tinta-fraca)]" : "cursor-text hover:bg-[var(--marca-brand-50)] focus:bg-[var(--marca-brand-50)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--marca-terracotta)]"} ${className}`}
       >
         {exibicao ??
-          (valor ? valor : <span className="text-[var(--borda-forte)]">—</span>)}
+          (valor ? (
+            valor
+          ) : (
+            <span className="text-[var(--borda-forte)]">—</span>
+          ))}
         {salvo ? (
           <span
             aria-hidden
@@ -215,13 +232,21 @@ export function CelulaEditavel({
               type="button"
               onClick={() => {
                 setErro(null);
+                devolverFoco.current = true;
                 void salvar();
               }}
               className="font-semibold underline"
             >
               Tentar de novo
             </button>
-            <button type="button" onClick={fechar} className="underline">
+            <button
+              type="button"
+              onClick={() => {
+                devolverFoco.current = true;
+                fechar();
+              }}
+              className="underline"
+            >
               Cancelar
             </button>
           </span>

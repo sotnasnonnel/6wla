@@ -28,7 +28,8 @@ export default async function PaginaIndicadoresObra({
             <>
               <span className="hidden md:inline">Clique</span>
               <span className="md:hidden">Toque</span> numa barra para recortar
-              todo o painel por ela.
+              todo o painel por ela. O recorte fica no endereço da página, para
+              compartilhar.
             </>
           ) : undefined
         }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { criaRestricao } from "@/server/restricoes/actions";
 import type { Membro } from "@/server/obras/queries";
@@ -41,6 +41,23 @@ export function ModalNovaRestricao({
   const router = useRouter();
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, inicia] = useTransition();
+  // O modal mantém o formulário montado ao fechar; "alterado" diz se há
+  // rascunho a perder quando a pessoa pede para fechar.
+  const [alterado, setAlterado] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const limpa = () => {
+    formRef.current?.reset();
+    setAlterado(false);
+    setErro(null);
+  };
+
+  const pedeFechar = () => {
+    if (pendente) return;
+    if (alterado && !window.confirm("Descartar alterações?")) return;
+    limpa();
+    aoFechar();
+  };
 
   const enviar = (form: HTMLFormElement) => {
     const d = new FormData(form);
@@ -74,8 +91,7 @@ export function ModalNovaRestricao({
         setErro(r.erro);
         return;
       }
-      setErro(null);
-      form.reset();
+      limpa();
       aoFechar();
       router.refresh();
     });
@@ -84,13 +100,14 @@ export function ModalNovaRestricao({
   return (
     <Modal
       aberto={aberto}
-      aoFechar={aoFechar}
+      aoFechar={pedeFechar}
+      bloqueado={pendente}
       titulo="Adicionar restrição"
       descricao="Só a descrição é obrigatória. O resto dá para completar depois, direto na tabela."
       largura={860}
       rodape={
         <>
-          <Botao variante="secundario" onClick={aoFechar} disabled={pendente}>
+          <Botao variante="secundario" onClick={pedeFechar} disabled={pendente}>
             Cancelar
           </Botao>
           <Botao type="submit" form="form-nova-restricao" disabled={pendente}>
@@ -100,7 +117,10 @@ export function ModalNovaRestricao({
       }
     >
       <form
+        ref={formRef}
         id="form-nova-restricao"
+        onInput={() => setAlterado(true)}
+        onChange={() => setAlterado(true)}
         onSubmit={(ev) => {
           ev.preventDefault();
           enviar(ev.currentTarget);
@@ -113,7 +133,7 @@ export function ModalNovaRestricao({
             name="descricao"
             rows={2}
             required
-            autoFocus
+            data-autofocus
             maxLength={4000}
             placeholder="O que está impedindo a atividade de acontecer"
           />

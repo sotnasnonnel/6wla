@@ -308,6 +308,13 @@ describe("porSemana", () => {
   it("ignora linhas sem data", () => {
     expect(porSemana([linha({ data_limite: null })])).toEqual([]);
   });
+
+  it("não conta restrição cancelada como prevista na semana do prazo", () => {
+    const s = porSemana([
+      linha({ status: "cancelada", data_limite: "2026-09-02" }),
+    ]);
+    expect(s.map((p) => p.previstas)).toEqual([]);
+  });
 });
 
 describe("mediaResolucaoPor", () => {
